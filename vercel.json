@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "api/*.js": { "maxDuration": 60 }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/:path*" }
+  ],
+  "crons": [
+    { "path": "/api/cron-market", "schedule": "30 5 * * *" },
+    { "path": "/api/cron-fin", "schedule": "0 6 * * *" }
+  ]
+}
