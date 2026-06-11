@@ -224,6 +224,65 @@ img{display:block}
 .empty-state h3{font-size:16px;font-weight:800;color:var(--text2);margin-bottom:6px}
 .empty-state p{font-size:13px}
 
+/* ── DASH 3-COL ── */
+.dash-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1080px){.dash-grid3{grid-template-columns:1fr}}
+
+/* ── RANK ROW EXPAND (미니 가격차트) ── */
+.rank-item{border-bottom:1px solid var(--border-soft)}
+.rank-item:last-child{border-bottom:none}
+.rank-item .rank-row{border-bottom:none}
+.rank-chart{padding:4px 18px 14px;background:var(--bg);border-top:1px dashed var(--border-soft)}
+.rank-chart-wrap{height:128px;position:relative}
+.rank-chart-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:11.5px;color:var(--text3)}
+.rank-chart-foot .go{font-size:12px;font-weight:700;color:var(--navy);padding:5px 10px;border-radius:7px;background:#fff;border:1.5px solid var(--border);cursor:pointer;transition:all .12s}
+.rank-chart-foot .go:hover{border-color:var(--navy)}
+
+/* ── SEGMENTED CONTROL ── */
+.seg{display:inline-flex;background:var(--bg2);border-radius:10px;padding:3px;gap:2px;flex-shrink:0}
+.seg button{padding:6px 13px;font-size:12.5px;font-weight:700;border-radius:8px;color:var(--text2);transition:all .12s;white-space:nowrap}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:#fff;color:var(--navy);box-shadow:var(--shadow-sm)}
+.seg.sm button{padding:4px 10px;font-size:11.5px}
+
+/* ── LIST TOOLBAR (필터) ── */
+.list-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:13px;background:var(--panel);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;box-shadow:var(--shadow-sm)}
+.sector-scroll{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1;min-width:180px;padding-bottom:2px;scrollbar-width:thin}
+.sector-scroll .chip{padding:6px 12px;font-size:12px;box-shadow:none;flex-shrink:0}
+.chip small{font-weight:600;opacity:.6;margin-left:3px;font-size:10.5px}
+.result-count{font-size:12px;color:var(--text3);white-space:nowrap;font-weight:600}
+.data-table th.sortable{cursor:pointer;user-select:none;transition:color .12s}
+.data-table th.sortable:hover{color:var(--navy)}
+.data-table th .arr{margin-left:2px;font-size:8.5px;color:var(--navy)}
+
+/* ── 종목 PICKER (분석 탭 검색형 선택) ── */
+.picker{position:relative;flex:0 0 300px;max-width:100%}
+.picker input{width:100%;padding:11px 14px 11px 36px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;color:var(--text);font-family:inherit;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%237A92A8' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") no-repeat 12px center;transition:all .15s}
+.picker input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.08)}
+.picker-pop{position:absolute;top:calc(100% + 7px);left:0;width:340px;max-width:86vw;background:var(--panel);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 16px 44px rgba(15,37,64,.2);padding:6px;z-index:150;display:none;max-height:55vh;overflow-y:auto}
+.picker-pop.show{display:block}
+.quick-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px 0 16px}
+.quick-chips .ql{font-size:11.5px;font-weight:700;color:var(--text3);margin-right:2px}
+.qchip{padding:7px 13px;font-size:12.5px;font-weight:700;border-radius:999px;background:var(--panel);border:1.5px solid var(--border);color:var(--text2);cursor:pointer;transition:all .13s;box-shadow:var(--shadow-sm)}
+.qchip:hover{border-color:var(--navy);color:var(--navy)}
+.qchip.cur{background:var(--navy);color:#fff;border-color:var(--navy)}
+.qchip .st{color:var(--gold);margin-right:3px}
+
+/* ── 가격 차트 툴바 + 모달 ── */
+.chart-toolbar{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.chart-ctrls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chart-expand{padding:6px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:700;color:var(--text2);background:#fff;transition:all .12s}
+.chart-expand:hover{border-color:var(--navy);color:var(--navy)}
+.chart-modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:300;align-items:center;justify-content:center;padding:22px;backdrop-filter:blur(3px)}
+.chart-modal-bg.show{display:flex}
+.chart-modal{background:#fff;border-radius:16px;width:100%;max-width:1120px;max-height:94vh;padding:18px 22px 22px;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.35)}
+.chart-modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.chart-modal-head h3{font-size:17px;font-weight:800}
+.chart-modal-head h3 small{font-size:12px;color:var(--text3);font-weight:600;margin-left:7px}
+.chart-modal-close{width:32px;height:32px;border-radius:9px;background:var(--bg2);font-size:15px;color:var(--text2);flex-shrink:0}
+.chart-modal-close:hover{background:var(--text);color:#fff}
+.chart-modal-body{flex:1;min-height:340px;height:58vh;position:relative}
+
 /* ── RESPONSIVE ── */
 @media(max-width:760px){
   .nav-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
@@ -278,23 +337,24 @@ img{display:block}
       <div class="hero-stats" id="hero-stats"></div>
     </div>
 
-    <div class="section-head">
-      <h2>거래량 상위 <span class="sub">오늘 거래가 활발한 종목</span></h2>
-      <span class="sec-link" onclick="switchTab('volume')">전체 보기 →</span>
-    </div>
-    <div class="card-grid" id="dash-volume-cards"></div>
-
-    <div class="dash-grid" style="margin-top:24px">
+    <div class="dash-grid3" style="margin-top:4px">
       <div class="panel">
         <div class="panel-head">
-          <div><h2>시가총액 상위</h2><div class="sub">대형주 TOP 6</div></div>
+          <div><h2>거래량 상위</h2><div class="sub">클릭하면 미니 가격 차트</div></div>
+          <button class="panel-more" onclick="switchTab('volume')">더보기</button>
+        </div>
+        <div id="dash-volume-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div><h2>시가총액 상위</h2><div class="sub">클릭하면 미니 가격 차트</div></div>
           <button class="panel-more" onclick="switchTab('marketcap')">더보기</button>
         </div>
         <div id="dash-mcap-list"></div>
       </div>
       <div class="panel">
         <div class="panel-head">
-          <div><h2>등락률 상위</h2><div class="sub">오늘 상승·하락 폭이 큰 종목</div></div>
+          <div><h2>등락률 상위</h2><div class="sub">클릭하면 미니 가격 차트</div></div>
         </div>
         <div id="dash-change-list"></div>
       </div>
@@ -304,24 +364,27 @@ img{display:block}
   <!-- TAB: 종목 분석 -->
   <div class="tab-view" id="tab-analysis">
     <div class="analysis-bar">
-      <label for="stock-select">종목 선택</label>
-      <select id="stock-select" class="stock-select"></select>
+      <div class="picker">
+        <input type="text" id="stock-picker" placeholder="종목명·코드로 검색" autocomplete="off" spellcheck="false">
+        <div class="picker-pop" id="picker-pop"></div>
+      </div>
       <button id="watch-toggle" class="watch-toggle" type="button">☆ 관심종목</button>
     </div>
+    <div class="quick-chips" id="analysis-quick"></div>
     <div id="analysis-body"></div>
   </div>
 
   <!-- TAB: 거래량 상위 -->
   <div class="tab-view" id="tab-volume">
-    <div class="section-head"><h2>거래량 상위 <span class="sub">거래량 기준 내림차순</span></h2></div>
-    <div class="filter-chips" id="volume-chips"></div>
+    <div class="section-head"><h2>거래량 상위 <span class="sub">컬럼 제목을 누르면 정렬 기준이 바뀝니다</span></h2></div>
+    <div id="volume-toolbar"></div>
     <div class="table-wrap"><div class="table-scroll"><table class="data-table" id="volume-table"></table></div></div>
   </div>
 
   <!-- TAB: 시가총액 상위 -->
   <div class="tab-view" id="tab-marketcap">
-    <div class="section-head"><h2>시가총액 상위 <span class="sub">시가총액 기준 내림차순</span></h2></div>
-    <div class="filter-chips" id="marketcap-chips"></div>
+    <div class="section-head"><h2>시가총액 상위 <span class="sub">컬럼 제목을 누르면 정렬 기준이 바뀝니다</span></h2></div>
+    <div id="marketcap-toolbar"></div>
     <div class="table-wrap"><div class="table-scroll"><table class="data-table" id="marketcap-table"></table></div></div>
   </div>
 
@@ -342,6 +405,20 @@ img{display:block}
     <div id="watchlist-body"></div>
   </div>
 
+</div>
+
+<!-- 가격 차트 크게 보기 모달 -->
+<div class="chart-modal-bg" id="chart-modal-bg">
+  <div class="chart-modal">
+    <div class="chart-modal-head">
+      <h3 id="chart-modal-title">가격 차트</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div id="chart-modal-ctrls" class="chart-ctrls"></div>
+        <button class="chart-modal-close" onclick="closeChartModal()">✕</button>
+      </div>
+    </div>
+    <div class="chart-modal-body"><canvas id="chart-price-big"></canvas></div>
+  </div>
 </div>
 
 <script>window.API_BASE = '';</script>

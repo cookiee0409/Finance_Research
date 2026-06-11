@@ -22,7 +22,7 @@ import {
 const TOP_CAP = 40;
 const TOP_VOL = 40;
 const MAX_MS = 50000;          // 함수 maxDuration 60s 가정. Hobby(10s)면 vercel.json에서 조정.
-const SPARK_DAYS = 30;
+const SPARK_DAYS = 160;        // 캔들차트용 OHLC 이력 (영업일 기준 ≈ 7~8개월)
 
 function ymd() { return compact(nowKST()); }
 function daysAgoCompact(n) { const d = nowKST(); d.setDate(d.getDate() - n); return compact(d); }
@@ -65,17 +65,29 @@ async function fetchAllStocks(basDt, key, startTime) {
 }
 
 async function fetchSpark(code, key) {
-  const url = `${STOCK_BASE}?serviceKey=${key}&resultType=json&numOfRows=${SPARK_DAYS + 10}&pageNo=1`
-    + `&beginBasDt=${daysAgoCompact(SPARK_DAYS + 18)}&endBasDt=${ymd()}&likeSrtnCd=${code}`;
+  // 캔들차트용 OHLC + 거래량. 달력일 기준 넉넉히 조회해 영업일 SPARK_DAYS개 확보.
+  const url = `${STOCK_BASE}?serviceKey=${key}&resultType=json&numOfRows=${SPARK_DAYS + 60}&pageNo=1`
+    + `&beginBasDt=${daysAgoCompact(Math.round(SPARK_DAYS * 1.55) + 20)}&endBasDt=${ymd()}&likeSrtnCd=${code}`;
   const r = await fetchGov(url);
   if (!r.ok) return null;
   const rows = itemsOf(r.json)
     .filter(i => String(i.srtnCd) === code && Number(i.clpr) > 0)
-    .map(i => ({ d: i.basDt, p: Number(i.clpr) }))
+    .map(i => ({
+      d: i.basDt,
+      o: Number(i.mkp) || Number(i.clpr), h: Number(i.hipr) || Number(i.clpr),
+      l: Number(i.lopr) || Number(i.clpr), c: Number(i.clpr), v: Number(i.trqu) || 0,
+    }))
     .sort((a, b) => a.d.localeCompare(b.d))
     .slice(-SPARK_DAYS);
   if (!rows.length) return null;
-  return { ok: true, code, dates: rows.map(x => x.d), series: rows.map(x => x.p), updatedAt: new Date().toISOString() };
+  return {
+    ok: true, code,
+    dates: rows.map(x => x.d),
+    open: rows.map(x => x.o), high: rows.map(x => x.h), low: rows.map(x => x.l),
+    close: rows.map(x => x.c), vol: rows.map(x => x.v),
+    series: rows.map(x => x.c),   // 구버전 프론트 호환(종가 라인)
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 async function fetchIndexSeries(idxNm, key) {
