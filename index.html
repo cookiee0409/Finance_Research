@@ -346,9 +346,162 @@ img{display:block}
 .gs-box .v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .gs-box .v small{font-size:11px;font-weight:600;color:var(--text3);margin-left:4px}
 
-/* ── 비교 레이더 + 우위 표시 ── */
+/* ── 비교 선택 UI (섹터 분류형) ── */
+.cmp-selbar{background:var(--panel);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.cmp-selected{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;min-height:38px;align-items:center}
+.cmp-selected:empty::before{content:'아래에서 비교할 종목을 최대 3개까지 선택하세요';font-size:12.5px;color:var(--text3)}
+.cmp-tag{display:inline-flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--navy),var(--teal));box-shadow:var(--shadow-sm)}
+.cmp-tag .x{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.22);font-size:11px;display:flex;align-items:center;justify-content:center;transition:background .12s}
+.cmp-tag .x:hover{background:rgba(255,255,255,.4)}
+.cmp-picker{border-top:1px solid var(--border-soft);padding-top:12px}
+.cmp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;margin-top:11px;max-height:230px;overflow-y:auto;padding-right:4px}
+.cmp-opt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--panel);cursor:pointer;transition:all .13s;text-align:left}
+.cmp-opt:hover{border-color:var(--navy);background:var(--bg2)}
+.cmp-opt.on{border-color:var(--navy);background:var(--primary-light,#EEF3FB);box-shadow:inset 0 0 0 1px var(--navy)}
+.cmp-opt.dis{opacity:.4;cursor:not-allowed}
+.cmp-opt .nm{font-size:12.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-opt .ck{font-size:12px;color:var(--navy);font-weight:800}
+
+/* ── 비교 막대그래프 + 우위 표시 ── */
 .compare-viz{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
 @media(max-width:880px){.compare-viz{grid-template-columns:1fr}}
+.adj-note{font-size:11.5px;color:var(--text3);margin-top:10px;padding:9px 12px;background:var(--bg);border-radius:8px;border-left:3px solid var(--gold);line-height:1.5}
+
+/* ══ 종목분석 풀 대시보드 (az-*) ══ */
+.az-hero{background:
+  radial-gradient(820px 360px at 92% -60%, rgba(200,151,58,.20), transparent 60%),
+  radial-gradient(620px 300px at 4% 130%, rgba(58,158,141,.22), transparent 58%),
+  linear-gradient(135deg,#0A1726,#16304F 58%,#27496F);
+  color:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:0 16px 44px rgba(11,27,46,.26)}
+.az-hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(ellipse at 80% 10%,#000 25%,transparent 72%);pointer-events:none}
+.az-hero>*{position:relative;z-index:1}
+.azh-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.azh-star{font-size:20px;color:rgba(255,255,255,.5);cursor:pointer;transition:color .15s}
+.azh-star.on{color:var(--gold-soft)}
+.azh-name{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.azh-code{font-size:14px;color:rgba(255,255,255,.6);font-weight:600}
+.azh-badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2)}
+.azh-actions{margin-left:auto;display:flex;gap:8px}
+.azh-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);transition:background .15s}
+.azh-btn:hover{background:rgba(255,255,255,.2)}
+.azh-grid{display:grid;grid-template-columns:300px 1fr;gap:22px}
+@media(max-width:920px){.azh-grid{grid-template-columns:1fr}}
+.azh-pricewrap{}
+.azh-pday{font-size:12px;color:rgba(255,255,255,.55);margin-bottom:6px}
+.azh-price{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:3px}
+.azh-price small{font-size:16px;font-weight:600;color:rgba(255,255,255,.7)}
+.azh-chg{font-size:15px;font-weight:700;margin-top:7px;font-variant-numeric:tabular-nums}
+.azh-chg.up{color:#FF8A8A}.azh-chg.dn{color:#9CC0FF}
+.azh-watch{margin-top:12px;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;transition:all .15s}
+.azh-watch:hover,.azh-watch.on{background:var(--gold-tint);border-color:var(--gold-soft);color:#8A6310}
+.azh-ohlc{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 20px;margin-top:16px;max-width:280px}
+.azh-ohlc .r{display:flex;justify-content:space-between;font-size:12px}
+.azh-ohlc .r .k{color:rgba(255,255,255,.5)}
+.azh-ohlc .r .v{font-weight:700;font-variant-numeric:tabular-nums}
+.azh-metrics{display:grid;grid-template-columns:repeat(6,1fr);background:rgba(255,255,255,.07);border-radius:12px;overflow:hidden;align-self:start}
+@media(max-width:920px){.azh-metrics{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:520px){.azh-metrics{grid-template-columns:repeat(2,1fr)}}
+.azh-m{padding:13px 14px;border-left:1px solid rgba(255,255,255,.08)}
+.azh-m:first-child{border-left:none}
+.azh-m .l{font-size:11px;color:rgba(255,255,255,.55);font-weight:500;margin-bottom:5px;white-space:nowrap}
+.azh-m .v{font-size:17px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.azh-m .s{font-size:10.5px;color:rgba(255,255,255,.5);margin-top:3px;white-space:nowrap}
+.azh-m .s.up{color:#FF8A8A}.azh-m .s.dn{color:#9CC0FF}
+.azh-52{margin-top:7px}
+.azh-52-track{height:5px;border-radius:99px;background:linear-gradient(90deg,#4A7DF0,rgba(255,255,255,.25) 50%,#F05A5A);position:relative}
+.azh-52-mk{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;background:#fff;border:2.5px solid var(--gold);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+
+/* 분석 행 그리드 */
+.az-row3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.az-row3.even{grid-template-columns:repeat(3,1fr)}
+@media(max-width:1080px){.az-row3,.az-row3.even{grid-template-columns:1fr}}
+.az-card{background:var(--panel);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);transition:box-shadow .2s}
+.az-card:hover{box-shadow:0 8px 28px rgba(15,37,64,.09)}
+.az-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.az-card-head h3{font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+.az-card-head h3 .sub{font-size:11px;color:var(--text3);font-weight:500;margin-left:6px}
+.az-mini-tabs{display:inline-flex;background:var(--bg2);border-radius:8px;padding:3px;gap:2px}
+.az-mini-tabs button{padding:4px 9px;font-size:11px;font-weight:700;border-radius:6px;color:var(--text2)}
+.az-mini-tabs button.on{background:#fff;color:var(--navy);box-shadow:var(--shadow-sm)}
+.az-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;height:240px;color:var(--text3);text-align:center;gap:8px;padding:20px}
+.az-ph .ico{font-size:30px;opacity:.5}
+.az-ph .t{font-size:13px;font-weight:700;color:var(--text2)}
+.az-ph .d{font-size:11.5px;line-height:1.5}
+
+/* 52주 가격 범위 (주가차트 하단) */
+.az-range{margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft)}
+.az-range-bar{height:8px;border-radius:99px;background:linear-gradient(90deg,#DCE6F2,#E9D4A6);position:relative;margin:18px 0 6px}
+.az-range-mk{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:var(--gain);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.az-range-cur{position:absolute;bottom:calc(100% + 4px);transform:translateX(-50%);font-size:11px;font-weight:800;color:var(--text);white-space:nowrap}
+.az-range-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--text3)}
+.az-range-ends b{color:var(--text2);font-variant-numeric:tabular-nums}
+
+/* 수익률 사이드 수치 */
+.az-ret-wrap{display:flex;gap:14px;align-items:stretch}
+.az-ret-chart{flex:1;min-width:0;height:210px;position:relative}
+.az-ret-legend{display:flex;flex-direction:column;justify-content:center;gap:14px;flex-shrink:0;min-width:78px}
+.az-ret-item .nm{font-size:11.5px;color:var(--text2);font-weight:700;display:flex;align-items:center;gap:5px}
+.az-ret-item .nm .d{width:9px;height:3px;border-radius:2px}
+.az-ret-item .vv{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+
+/* 정보 카드 키-밸류 */
+.az-kv{display:grid;grid-template-columns:1fr 1fr;gap:13px 18px}
+.az-kv.c1{grid-template-columns:1fr}
+.az-kv .it .l{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:3px}
+.az-kv .it .v{font-size:16px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.az-kv .it .v small{font-size:11px;font-weight:600;color:var(--text3);margin-left:3px}
+.az-kv .it .sub{font-size:10.5px;font-weight:600;margin-top:2px}
+
+/* 핵심지표 게이지 */
+.az-gauge-wrap{display:flex;gap:18px;align-items:center}
+.az-gauge{width:120px;height:120px;position:relative;flex-shrink:0}
+.az-gauge .sc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.az-gauge .sc b{font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.az-gauge .sc span{font-size:10.5px;color:var(--text3);font-weight:600;margin-top:2px}
+.az-gauge-side{flex:1;display:flex;flex-direction:column;gap:9px}
+.az-gauge-side .r{display:flex;justify-content:space-between;font-size:12px;padding-bottom:7px;border-bottom:1px solid var(--border-soft)}
+.az-gauge-side .r:last-child{border-bottom:none;padding-bottom:0}
+.az-gauge-side .r .k{color:var(--text3);font-weight:600}
+.az-gauge-side .r .v{font-weight:800;font-variant-numeric:tabular-nums}
+
+/* 카테고리 7-nav 스트립 */
+.az-catnav{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:1080px){.az-catnav{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:620px){.az-catnav{grid-template-columns:repeat(2,1fr)}}
+.az-cat{background:var(--panel);border:1.5px solid var(--border);border-radius:12px;padding:13px;cursor:pointer;transition:all .16s;text-align:left;box-shadow:var(--shadow-sm)}
+.az-cat:hover{border-color:var(--navy);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.az-cat.on{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.az-cat .ic{font-size:18px;margin-bottom:7px}
+.az-cat .t{font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px}
+.az-cat .d{font-size:10.5px;color:var(--text3);line-height:1.45}
+
+/* 글로벌 지수 스트립 (구글파이낸스) */
+.global-strip{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.gs-chip{flex:1;min-width:130px;background:var(--panel);border:1.5px solid var(--border);border-radius:12px;padding:11px 15px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:3px}
+.gs-chip .k{font-size:11px;color:var(--text3);font-weight:700}
+.gs-chip .v{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.gs-chip .c{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* 오늘 일정 푸터 */
+.az-footer{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:var(--panel);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 18px;font-size:12px;color:var(--text2);box-shadow:var(--shadow-sm)}
+.az-footer .fl{display:flex;align-items:center;gap:7px;font-weight:600}
+.az-footer .ev{color:var(--text3)}
+.az-footer .ev b{color:var(--text2);font-weight:700}
+.az-footer .right{margin-left:auto;display:flex;gap:14px;color:var(--text3);font-variant-numeric:tabular-nums}
+
+/* ── 연도별 손익 도넛 ── */
+.donut-years{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.dy-card{background:var(--bg);border:1px solid var(--border-soft);border-radius:12px;padding:12px 10px 14px;text-align:center;transition:all .18s;cursor:default}
+.dy-card:hover{background:#fff;box-shadow:var(--shadow-md);border-color:var(--border)}
+.dy-year{font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px}
+.dy-donut{width:100%;aspect-ratio:1;max-width:128px;margin:0 auto;position:relative}
+.dy-stat{margin-top:10px;display:flex;flex-direction:column;gap:3px}
+.dy-stat .r{display:flex;justify-content:space-between;font-size:11px}
+.dy-stat .r .k{color:var(--text3);font-weight:600}
+.dy-stat .r .v{font-weight:800;font-variant-numeric:tabular-nums}
+.donut-legend-inline{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.dli{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text2);font-weight:600}
+.dli .d{width:9px;height:9px;border-radius:3px}
 .data-table td.best{background:linear-gradient(90deg,rgba(200,151,58,.10),rgba(200,151,58,.04));font-weight:800;color:#7A5A14}
 .data-table td.best::after{content:' ✦';font-size:10px;color:var(--gold)}
 .data-table tbody tr:hover td.best{background:linear-gradient(90deg,rgba(200,151,58,.16),rgba(200,151,58,.08))}
@@ -386,8 +539,7 @@ img{display:block}
     <div class="nav-tabs" id="nav-tabs">
       <button class="nav-tab active" data-tab="dashboard">대시보드</button>
       <button class="nav-tab" data-tab="analysis">종목 분석</button>
-      <button class="nav-tab" data-tab="volume">거래량 상위</button>
-      <button class="nav-tab" data-tab="marketcap">시가총액 상위</button>
+      <button class="nav-tab" data-tab="ranking">상위 종목</button>
       <button class="nav-tab" data-tab="compare">비교</button>
       <button class="nav-tab" data-tab="watchlist">관심종목</button>
     </div>
@@ -416,6 +568,8 @@ img{display:block}
       </div>
       <div class="hero-stats" id="hero-stats"></div>
     </div>
+
+    <div id="global-strip"></div>
 
     <div class="insight-grid">
       <div class="panel pad">
@@ -472,27 +626,25 @@ img{display:block}
     <div id="analysis-body"></div>
   </div>
 
-  <!-- TAB: 거래량 상위 -->
-  <div class="tab-view" id="tab-volume">
-    <div class="section-head"><h2>거래량 상위 <span class="sub">컬럼 제목을 누르면 정렬 기준이 바뀝니다</span></h2></div>
-    <div id="volume-toolbar"></div>
-    <div class="table-wrap"><div class="table-scroll"><table class="data-table" id="volume-table"></table></div></div>
-  </div>
-
-  <!-- TAB: 시가총액 상위 -->
-  <div class="tab-view" id="tab-marketcap">
-    <div class="section-head"><h2>시가총액 상위 <span class="sub">컬럼 제목을 누르면 정렬 기준이 바뀝니다</span></h2></div>
-    <div id="marketcap-toolbar"></div>
-    <div class="table-wrap"><div class="table-scroll"><table class="data-table" id="marketcap-table"></table></div></div>
+  <!-- TAB: 상위 종목 (거래량·시가총액 통합) -->
+  <div class="tab-view" id="tab-ranking">
+    <div class="section-head">
+      <h2 id="ranking-title">거래량 상위 <span class="sub">컬럼 제목을 누르면 정렬 기준이 바뀝니다</span></h2>
+      <div class="seg" id="ranking-basis"></div>
+    </div>
+    <div id="ranking-toolbar"></div>
+    <div class="table-wrap"><div class="table-scroll"><table class="data-table" id="ranking-table"></table></div></div>
   </div>
 
   <!-- TAB: 비교 -->
   <div class="tab-view" id="tab-compare">
     <div class="section-head"><h2>종목 비교 <span class="sub">최대 3종목의 밸류에이션·재무 비교</span></h2></div>
-    <div class="compare-pick">
-      <div class="compare-pick-label">비교할 종목을 선택하세요 (최대 3개)</div>
-      <div class="compare-chips" id="compare-chips"></div>
-      <div class="compare-hint" id="compare-hint"></div>
+    <div class="cmp-selbar">
+      <div class="cmp-selected" id="compare-selected"></div>
+      <div class="cmp-picker">
+        <div class="sector-scroll" id="compare-sectors"></div>
+        <div class="cmp-list" id="compare-list"></div>
+      </div>
     </div>
     <div id="compare-body"></div>
   </div>

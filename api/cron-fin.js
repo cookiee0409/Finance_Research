@@ -41,12 +41,17 @@ function triple(row) {
   return [parseNum(row.thstrm_amount), parseNum(row.frmtrm_amount), parseNum(row.bfefrmtrm_amount)];
 }
 
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 async function fetchAcnt(corpCode, year, fsDiv, key) {
-  try {
-    const r = await fetch(`${ACNT_URL}?crtfc_key=${key}&corp_code=${corpCode}&bsns_year=${year}&reprt_code=11011&fs_div=${fsDiv}`);
-    const j = await r.json();
-    if (j.status === '000' && Array.isArray(j.list) && j.list.length) return j.list;
-  } catch {}
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const r = await fetch(`${ACNT_URL}?crtfc_key=${key}&corp_code=${corpCode}&bsns_year=${year}&reprt_code=11011&fs_div=${fsDiv}`);
+      const j = await r.json();
+      if (j.status === '000' && Array.isArray(j.list) && j.list.length) return j.list;
+      if (j.status === '013') return null;   // 013 = 조회 데이터 없음 (재시도 무의미)
+    } catch {}
+    await sleep(300 + attempt * 300);
+  }
   return null;
 }
 
@@ -88,6 +93,33 @@ async function fetchIndx(corpCode, year, key) {
     } catch {}
   }
   return out;
+}
+
+// 배당 (DART 배당에 관한 사항)
+const DIV_URL = 'https://opendart.fss.or.kr/api/alotMatter.json';
+async function fetchDividend(corpCode, year, key) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const r = await fetch(`${DIV_URL}?crtfc_key=${key}&corp_code=${corpCode}&bsns_year=${year}&reprt_code=11011`);
+      const j = await r.json();
+      if (j.status === '013') return null;
+      if (j.status === '000' && Array.isArray(j.list)) {
+        // 주당배당금·수익률은 보통주 기준, 성향은 회사 단위(종목구분 무관)
+        const pick = (sub, preferCommon) => {
+          const rows = j.list.filter(x => (x.se || '').replace(/\s/g,'').includes(sub));
+          const row = preferCommon ? (rows.find(x => (x.stock_knd||'').includes('보통')) || rows[0]) : rows[0];
+          return row ? parseNum(row.thstrm) : null;
+        };
+        const dps = pick('주당현금배당금', true);
+        const payout = pick('현금배당성향', false);
+        const dy = pick('현금배당수익률', true);
+        if (dps != null || payout != null) return { dps, payoutRatio: round1(payout), divYield: round1(dy), divYear: year };
+        return null;
+      }
+    } catch {}
+    await sleep(300);
+  }
+  return null;
 }
 
 async function buildOne(code, name, key) {
@@ -138,11 +170,14 @@ async function buildOne(code, name, key) {
     if (m && m.netIncome != null && m.equity) roe = round1(m.netIncome / m.equity * 100);
   }
   const epsLatest = merged[latest]?.eps ?? null;
+  const equityLatest = toEok(merged[latest]?.equity);   // 자본총계(억) → PBR=시총/자기자본
+  const dividend = await fetchDividend(corpCode, latest, key);
 
   return {
     ok: true, code, name, corpCode, fsDiv, reportYear: latest,
     years, revenue, opIncome, netIncome, debtRatio, opMargin, netMargin,
-    roe: round1(roe), eps: epsLatest,
+    roe: round1(roe), eps: epsLatest, equity: equityLatest,
+    dividend,                       // { dps, payoutRatio, divYield, divYear } | null
     indicators: indx,
     updatedAt: new Date().toISOString(),
   };

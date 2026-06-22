@@ -71,6 +71,20 @@ export default async function handler(req, res) {
       return res.status(200).json(d || { ok: false, code, error: '재무 데이터 준비 중입니다.' });
     }
 
+    if (type === 'naver') {
+      const code = (req.query.code || '').toString().trim();
+      if (!code) return res.status(200).json({ ok: false, error: 'code 파라미터 필요' });
+      const d = await kvGet('fr_naver_' + code);
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=600');
+      return res.status(200).json(d || { ok: false, code, error: '네이버 데이터 준비 중' });
+    }
+
+    if (type === 'global') {
+      const d = await kvGet('fr_global');
+      res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=300');
+      return res.status(200).json(d || { ok: false, items: [], error: '글로벌 데이터 없음(GF 시트 미연결)' });
+    }
+
     if (type === 'list') {
       const d = await kvGet('fr_list');
       res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=300');

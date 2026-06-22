@@ -22,7 +22,7 @@ import {
 const TOP_CAP = 40;
 const TOP_VOL = 40;
 const MAX_MS = 50000;          // 함수 maxDuration 60s 가정. Hobby(10s)면 vercel.json에서 조정.
-const SPARK_DAYS = 160;        // 캔들차트용 OHLC 이력 (영업일 기준 ≈ 7~8개월)
+const SPARK_DAYS = 250;        // 캔들차트·52주밴드용 OHLC 이력 (영업일 ≈ 1년)
 
 function ymd() { return compact(nowKST()); }
 function daysAgoCompact(n) { const d = nowKST(); d.setDate(d.getDate() - n); return compact(d); }
@@ -91,8 +91,8 @@ async function fetchSpark(code, key) {
 }
 
 async function fetchIndexSeries(idxNm, key) {
-  const url = `${INDEX_BASE}?serviceKey=${key}&resultType=json&numOfRows=60&pageNo=1`
-    + `&idxNm=${encodeURIComponent(idxNm)}&beginBasDt=${daysAgoCompact(50)}&endBasDt=${ymd()}`;
+  const url = `${INDEX_BASE}?serviceKey=${key}&resultType=json&numOfRows=200&pageNo=1`
+    + `&idxNm=${encodeURIComponent(idxNm)}&beginBasDt=${daysAgoCompact(200)}&endBasDt=${ymd()}`;
   const r = await fetchGov(url);
   if (!r.ok) return [];
   return itemsOf(r.json)
@@ -171,8 +171,8 @@ export default async function handler(req, res) {
     try {
       const ks = await fetchIndexSeries('코스피', INDEX_KEY);
       const kq = await fetchIndexSeries('코스닥', INDEX_KEY);
-      if (ks.length) { const l = ks[ks.length - 1]; kospi = { price: l.price, rate: l.rate, diff: l.diff, spark: ks.slice(-30).map(x => x.price) }; }
-      if (kq.length) { const l = kq[kq.length - 1]; kosdaq = { price: l.price, rate: l.rate, diff: l.diff, spark: kq.slice(-30).map(x => x.price) }; }
+      if (ks.length) { const l = ks[ks.length - 1]; kospi = { price: l.price, rate: l.rate, diff: l.diff, spark: ks.slice(-130).map(x => x.price), sparkDates: ks.slice(-130).map(x => x.d) }; }
+      if (kq.length) { const l = kq[kq.length - 1]; kosdaq = { price: l.price, rate: l.rate, diff: l.diff, spark: kq.slice(-130).map(x => x.price), sparkDates: kq.slice(-130).map(x => x.d) }; }
     } catch (e) { result.steps.indexError = e.message; }
     const fx = await getUsdKrw();
     const up = rows.filter(r => r.rate > 0).length, down = rows.filter(r => r.rate < 0).length;
