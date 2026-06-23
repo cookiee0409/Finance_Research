@@ -455,6 +455,10 @@ img{display:block}
 .analysis-extra-grid .extra-half{grid-column:span 3}
 .analysis-extra-grid .extra-third{grid-column:span 2}
 @media(max-width:1180px){.analysis-extra-grid .extra-half,.analysis-extra-grid .extra-third{grid-column:span 6}}
+.info-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:5px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);color:var(--text3);font-size:11px;font-weight:900;cursor:help;vertical-align:middle}
+.info-tip::after{content:'핵심 지표 점수는 수익성(ROE), 마진(영업이익률), 안정성(부채비율), 성장성(매출 성장률 YoY), 밸류에이션(PER)을 각각 0~100점으로 환산한 뒤 평균낸 값입니다. 부채비율은 낮을수록, PER은 낮을수록 유리하게 계산합니다.';position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);width:310px;max-width:70vw;padding:11px 13px;border-radius:10px;background:rgba(15,37,64,.94);color:#fff;font-size:11.5px;font-weight:650;line-height:1.55;text-align:left;box-shadow:0 12px 32px rgba(15,37,64,.25);opacity:0;visibility:hidden;pointer-events:none;z-index:80}
+.info-tip::before{content:'';position:absolute;left:50%;bottom:calc(100% + 3px);transform:translateX(-50%);border:6px solid transparent;border-top-color:rgba(15,37,64,.94);opacity:0;visibility:hidden;z-index:81}
+.info-tip:hover::after,.info-tip:focus::after,.info-tip:hover::before,.info-tip:focus::before{opacity:1;visibility:visible}
 .az-mini-table{display:flex;flex-direction:column;gap:8px}
 .az-mini-row{display:grid;grid-template-columns:92px 1fr 64px;gap:10px;align-items:center;font-size:12px}
 .az-mini-row .nm{font-weight:800;color:var(--text2)}
@@ -468,10 +472,10 @@ img{display:block}
 .holder-line .k{display:flex;align-items:center;gap:7px;color:var(--text2);font-weight:800}
 .holder-line .dot{width:9px;height:9px;border-radius:3px}
 .holder-line .v{font-weight:900;font-variant-numeric:tabular-nums}
-.heatmap{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
-.heat-cell{min-height:54px;border-radius:9px;padding:9px 8px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
-.heat-cell .m{font-size:11px;font-weight:800;opacity:.85}
-.heat-cell .r{font-size:14px;font-weight:900;font-variant-numeric:tabular-nums}
+.heatmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:8px;max-width:100%;overflow:hidden}
+.heat-cell{min-height:56px;border-radius:9px;padding:8px 7px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);min-width:0}
+.heat-cell .m{font-size:10.5px;font-weight:800;opacity:.85;white-space:nowrap}
+.heat-cell .r{font-size:13px;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .heat-empty{color:var(--text3);font-size:12.5px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:10px}
 .az-row3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px;margin-bottom:16px}
 .az-row3.even{grid-template-columns:repeat(3,1fr)}

@@ -712,7 +712,7 @@ async function renderAnalysisBody(){
 
     <div class="az-bottom-grid">
       <div class="az-card"><div class="az-card-head"><h3>거래 동향</h3></div><div class="az-kv" id="kv-trade"></div></div>
-      <div class="az-card"><div class="az-card-head"><h3>핵심 지표</h3></div>
+      <div class="az-card"><div class="az-card-head"><h3>핵심 지표 <span class="info-tip" tabindex="0">?</span></h3></div>
         <div class="az-gauge-wrap"><div class="az-gauge"><canvas id="gauge-core"></canvas><div class="sc"><b id="gauge-sc">–</b><span>지표점수</span></div></div><div class="az-gauge-side" id="gauge-side"></div></div>
       </div>
       <div class="az-card"><div class="az-card-head"><h3>배당 정보</h3></div><div id="kv-div"></div></div>
@@ -721,9 +721,8 @@ async function renderAnalysisBody(){
     <div class="analysis-extra-grid">
       <div class="az-card extra-half"><div class="az-card-head"><h3>밸류에이션</h3></div><div id="az-valuation"></div></div>
       <div class="az-card extra-half"><div class="az-card-head"><h3>주주 구성 <span class="sub">보유 비중</span></h3></div><div id="az-holder"></div></div>
-      <div class="az-card extra-third"><div class="az-card-head"><h3>유통주식 비율</h3></div><div id="az-float"></div></div>
-      <div class="az-card extra-third"><div class="az-card-head"><h3>외국인 보유율 추이</h3></div><div class="chart-wrap" id="foreign-rate-wrap"><canvas id="chart-foreign-rate"></canvas></div></div>
-      <div class="az-card extra-third"><div class="az-card-head"><h3>월별 수익률 히트맵</h3></div><div id="return-heatmap"></div></div>
+      <div class="az-card extra-half"><div class="az-card-head"><h3>외국인 보유율 추이</h3></div><div class="chart-wrap" id="foreign-rate-wrap"><canvas id="chart-foreign-rate"></canvas></div></div>
+      <div class="az-card extra-half"><div class="az-card-head"><h3>월별 수익률 히트맵</h3></div><div id="return-heatmap"></div></div>
     </div>
 
     <div class="az-footer">
@@ -957,7 +956,6 @@ function renderCoreGauge(s){
 function renderAnalysisExtras(s, sp){
   renderValuationPanel(s);
   renderHolderPanel(s);
-  renderFloatPanel(s);
   renderForeignRateTrend(s);
   renderMonthlyHeatmap(sp);
 }
@@ -1005,27 +1003,6 @@ function renderHolderPanel(s){
   });
 }
 
-function renderFloatPanel(s){
-  const box=el('az-float'); if(!box) return;
-  const nv=s.naver||null;
-  const floatRate = s.floatRate ?? nv?.floatRate ?? null;
-  const floatingShares = nv?.floatingShares ?? null;
-  const listedShares = nv?.listedShares ?? sharesOf(s);
-  if(floatRate==null){
-    box.innerHTML=`<div class="heat-empty">유통주식수/유통비율 데이터가 아직 준비되지 않았습니다.</div>`;
-    return;
-  }
-  const locked = clampN(100-floatRate,0,100);
-  box.innerHTML=`<div class="holder-wrap"><div class="chart-wrap" style="height:180px"><canvas id="chart-float"></canvas></div>
-    <div class="holder-legend">
-      <div class="holder-line"><span class="k"><span class="dot" style="background:${COLOR.loss}"></span>유통주식</span><span class="v">${floatRate.toFixed(2)}%</span></div>
-      <div class="holder-line"><span class="k"><span class="dot" style="background:#CBD5E1"></span>비유통주식</span><span class="v">${locked.toFixed(2)}%</span></div>
-      ${floatingShares?`<div class="holder-line"><span class="k">유통주식수</span><span class="v">${num(floatingShares)}주</span></div>`:''}
-      ${listedShares?`<div class="holder-line" style="color:var(--text3);font-size:11px">상장주식수 ${num(listedShares)}주</div>`:''}
-    </div></div>`;
-  mountChart('chart-float',{type:'doughnut',data:{labels:['유통주식','비유통주식'],datasets:[{data:[floatRate,locked],backgroundColor:[COLOR.loss,'#CBD5E1'],borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'66%',plugins:{legend:{display:false},centerText:{lines:['유통주식 비율',floatRate.toFixed(2)+'%']},tooltip:baseTooltip(v=>v.toFixed(2)+'%')}},plugins:[centerTextPlugin]});
-}
-
 function renderForeignRateTrend(s){
   const wrap=el('foreign-rate-wrap'); if(!wrap || typeof Chart==='undefined') return;
   const sup=s.naver&&s.naver.supply||[];
@@ -1060,7 +1037,7 @@ function renderMonthlyHeatmap(sp){
   box.innerHTML=`<div class="heatmap">${rows.map(r=>{
     const a=Math.abs(r.ret)/maxAbs;
     const col=r.ret>=0?`rgba(226,59,59,${0.38+a*.62})`:`rgba(37,99,235,${0.38+a*.62})`;
-    return `<div class="heat-cell" style="background:${col}"><div class="m">${r.label}</div><div class="r">${r.ret>=0?'+':''}${r.ret}%</div></div>`;
+    return `<div class="heat-cell" style="background:${col}"><div class="m">${r.label}</div><div class="r">${r.ret>=0?'+':''}${Number(r.ret).toFixed(Math.abs(r.ret)>=10?1:2)}%</div></div>`;
   }).join('')}</div>`;
 }
 
@@ -1295,8 +1272,8 @@ function renderCandle(canvasId){
         candles:{ bars:vis, maxV, big:isBig },
         legend:{ display:false },
         tooltip:{ ...baseTooltip(), displayColors:false, animation:{duration:80}, position:'nearest', caretSize:5,
-          backgroundColor:'rgba(255,255,255,.08)', borderColor:'rgba(15,37,64,.14)', borderWidth:1, padding:10,
-          titleColor:COLOR.text, bodyColor:COLOR.text, bodyFont:{family:FONT,size:12,weight:'700'}, titleFont:{family:FONT,weight:'800',size:12},
+          backgroundColor:'rgba(15,37,64,.78)', borderColor:'rgba(255,255,255,.28)', borderWidth:1, padding:10,
+          titleColor:'#fff', bodyColor:'#fff', bodyFont:{family:FONT,size:12,weight:'700'}, titleFont:{family:FONT,weight:'800',size:12},
           filter: item=>item.dataset.label==='캔들',
           callbacks:{
             title: items=>{ if(!items.length) return ''; const b=vis[items[0].dataIndex]; return dashD(b.d) + ({D:'',W:' · 주봉',M:' · 월봉'}[chartState.interval]||''); },

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cookie Lab Admin</title>
+<style>
+:root{--bg:#EEF3F8;--panel:#fff;--text:#0F2540;--text2:#3D5A7A;--text3:#7A92A8;--border:#D9E3EE;--navy:#1E3A5F;--teal:#2D7D6F;--gain:#E23B3B}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding:34px}
+.wrap{max-width:760px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px}
+h1{font-size:24px;font-weight:850;letter-spacing:-.02em}
+.home{padding:9px 14px;border-radius:9px;border:1px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:800;text-decoration:none}
+.card{background:var(--panel);border:1.5px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 8px 28px rgba(15,37,64,.08)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+label{display:block;font-size:12px;font-weight:800;color:var(--text2);margin-bottom:7px}
+input{width:280px;max-width:100%;height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 13px;font:700 14px/1 Pretendard,sans-serif;color:var(--text)}
+input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.08)}
+button{height:42px;border:0;border-radius:10px;padding:0 16px;background:linear-gradient(135deg,var(--navy),var(--teal));color:#fff;font-size:13px;font-weight:850;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+.sub{font-size:13px;line-height:1.6;color:var(--text3);margin-top:6px}
+.result{margin-top:16px;border-radius:10px;background:#F7FAFD;border:1px solid var(--border);padding:14px;min-height:86px;font:12px/1.55 Consolas,monospace;color:var(--text2);white-space:pre-wrap;overflow:auto}
+.ok{color:#167A57;font-weight:850}.err{color:#B42318;font-weight:850}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Cookie Lab Admin</h1>
+    <a class="home" href="./index.html">대시보드</a>
+  </div>
+  <div class="card">
+    <h2 style="font-size:17px;margin-bottom:4px">시세 랭킹 수동 갱신</h2>
+    <p class="sub">현재가, 거래량, 거래대금, 시가총액 랭킹 캐시를 즉시 갱신합니다. 완료 후 사용자 화면 하단의 마지막 갱신 시각이 바뀝니다.</p>
+    <div class="row">
+      <div>
+        <label for="admin-pw">관리자 비밀번호</label>
+        <input id="admin-pw" type="password" autocomplete="current-password" placeholder="ADMIN_PW">
+      </div>
+      <button id="refresh-rank" type="button">수동 갱신</button>
+    </div>
+    <div class="result" id="result">대기 중</div>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+function show(text, cls=''){
+  const box=$('result');
+  box.className='result '+cls;
+  box.textContent=text;
+}
+$('refresh-rank').addEventListener('click', async ()=>{
+  const pw=$('admin-pw').value.trim();
+  if(!pw){ show('관리자 비밀번호를 입력하세요.','err'); return; }
+  const btn=$('refresh-rank');
+  btn.disabled=true;
+  show('갱신 요청 중...');
+  try{
+    const res=await fetch('/api/cron-naver-rank',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({adminPw:pw})
+    });
+    const json=await res.json();
+    show(JSON.stringify(json,null,2), json.ok?'ok':'err');
+  }catch(e){
+    show('요청 실패: '+e.message,'err');
+  }finally{
+    btn.disabled=false;
+  }
+});
+</script>
+</body>
+</html>
