@@ -46,14 +46,15 @@ export default async function handler(req, res) {
     if (type === 'quotes') {
       const codes = (req.query.codes || '').toString().split(',').map(s => s.trim()).filter(Boolean);
       if (!codes.length) return res.status(200).json({ ok: false, error: 'codes 파라미터 필요' });
-      const rankList = (await kvGet('fr_naver_rank_list'))?.list || [];
+      const rankData = await kvGet('fr_naver_rank_list');
+      const rankList = rankData?.list || [];
       const rankMap = Object.fromEntries(rankList.map(x => [x.code, x]));
       const daymap = (await kvGet('fr_daymap')) || {};
       const list = codes.map(code => {
         const n = rankMap[code];
         const m = daymap[code];
-        return n ? { code, name: n.name, price: n.price, rate: n.rate, vol: n.vol || 0, cap: n.cap || 0, market: n.market || '' }
-                 : m ? { code, name: m.n, price: m.p, rate: m.r, vol: m.v || 0, cap: m.cap || 0, market: m.mkt || '' }
+        return n ? { code, name: n.name, price: n.price, rate: n.rate, vol: n.vol || 0, amount: n.amount || 0, cap: n.cap || 0, market: n.market || '', marketDataAt: n.localTradedAt || rankData?.marketDataAt || null }
+                 : m ? { code, name: m.n, price: m.p, rate: m.r, vol: m.v || 0, amount: 0, cap: m.cap || 0, market: m.mkt || '' }
                  : { code, name: code, price: 0, rate: 0, error: true };
       });
       res.setHeader('Cache-Control', 's-maxage=300');
