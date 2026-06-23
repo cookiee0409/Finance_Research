@@ -358,6 +358,8 @@ img{display:block}
 .cmp-tag .x:hover{background:rgba(255,255,255,.4)}
 .cmp-picker{border-top:1px solid var(--border-soft);padding-top:12px}
 .cmp-list-controls{display:flex;align-items:center;gap:10px;margin-top:11px;flex-wrap:wrap}
+.cmp-search{width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border);border-radius:9px;background:#fff;color:var(--text);font:700 13px/1.2 'Pretendard',sans-serif}
+.cmp-search:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.08)}
 .cmp-select{flex:1;min-width:260px;height:40px;padding:0 38px 0 13px;border:1.5px solid var(--border);border-radius:9px;background:#fff;color:var(--text);font:700 13px/1.2 'Pretendard',sans-serif;cursor:pointer}
 .cmp-select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.08)}
 .cmp-select:disabled{background:var(--bg);color:var(--text3);cursor:not-allowed}
@@ -377,8 +379,29 @@ img{display:block}
 .cmp-row-state{font-size:12px;font-weight:900;color:var(--navy)}
 
 /* ── 비교 막대그래프 + 우위 표시 ── */
-.compare-viz{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:18px}
+.compare-viz{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}
+@media(max-width:1120px){.compare-viz{grid-template-columns:1fr}}
 .compare-cap-card .chart-wrap{height:280px}
+.compare-metric-card{min-width:0}
+.compare-table-wrap{max-height:500px;overflow:auto;border:1px solid var(--border-soft);border-radius:10px}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px}
+.compare-table th{background:var(--bg2);color:var(--text3);font-size:11px;font-weight:800;padding:11px 12px;text-align:right;border-bottom:1px solid var(--border-soft);white-space:nowrap}
+.compare-table th:first-child{text-align:left}
+.compare-table td{padding:12px;border-bottom:1px solid var(--border-soft);text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.compare-table td:first-child{text-align:left;color:var(--text);font-weight:800}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table .best{background:linear-gradient(90deg,rgba(200,151,58,.10),rgba(200,151,58,.03));color:#7A5A14}
+.mini-bar{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.mini-track{width:62px;height:9px;border-radius:99px;background:var(--bg2);overflow:hidden}
+.mini-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#8EB3FF,#2563EB)}
+.vis-card .chart-wrap{height:270px}
+.valuation-grid{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.valuation-row{display:grid;grid-template-columns:74px repeat(4,1fr);gap:8px;align-items:center;font-size:12px}
+.valuation-row.head{font-size:11px;color:var(--text3);font-weight:800}
+.valuation-name{font-weight:800;color:var(--text)}
+.valuation-cell{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.valuation-cell .bar{height:11px;border-radius:3px;background:linear-gradient(90deg,#A8C4FF,#2563EB);min-width:3px}
+.valuation-cell .v{font-weight:800;font-variant-numeric:tabular-nums}
 .adj-note{font-size:11.5px;color:var(--text3);margin-top:10px;padding:9px 12px;background:var(--bg);border-radius:8px;border-left:3px solid var(--gold);line-height:1.5}
 
 /* ══ 종목분석 풀 대시보드 (az-*) ══ */
@@ -428,6 +451,29 @@ img{display:block}
 .az-side-stack .az-card{flex:1}
 .az-bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
 .az-bottom-grid .az-card{min-width:0}
+.analysis-extra-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
+.analysis-extra-grid .az-card{min-width:0}
+.analysis-extra-grid .chart-wrap{height:220px}
+.analysis-extra-grid .wide{grid-column:1/-1}
+@media(max-width:1080px){.analysis-extra-grid{grid-template-columns:1fr}.analysis-extra-grid .wide{grid-column:auto}}
+.az-mini-table{display:flex;flex-direction:column;gap:8px}
+.az-mini-row{display:grid;grid-template-columns:92px 1fr 64px;gap:10px;align-items:center;font-size:12px}
+.az-mini-row .nm{font-weight:800;color:var(--text2)}
+.az-mini-row .track{height:10px;border-radius:99px;background:var(--bg2);overflow:hidden}
+.az-mini-row .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#8EB3FF,#2563EB)}
+.az-mini-row .vv{text-align:right;font-weight:900;font-variant-numeric:tabular-nums}
+.holder-wrap{display:grid;grid-template-columns:190px 1fr;gap:16px;align-items:center}
+@media(max-width:620px){.holder-wrap{grid-template-columns:1fr}}
+.holder-legend{display:flex;flex-direction:column;gap:8px}
+.holder-line{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+.holder-line .k{display:flex;align-items:center;gap:7px;color:var(--text2);font-weight:800}
+.holder-line .dot{width:9px;height:9px;border-radius:3px}
+.holder-line .v{font-weight:900;font-variant-numeric:tabular-nums}
+.heatmap{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.heat-cell{min-height:54px;border-radius:9px;padding:9px 8px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.heat-cell .m{font-size:11px;font-weight:800;opacity:.85}
+.heat-cell .r{font-size:14px;font-weight:900;font-variant-numeric:tabular-nums}
+.heat-empty{color:var(--text3);font-size:12.5px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:10px}
 .az-row3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px;margin-bottom:16px}
 .az-row3.even{grid-template-columns:repeat(3,1fr)}
 @media(max-width:1080px){.az-row3,.az-row3.even,.az-main-grid,.az-bottom-grid{grid-template-columns:1fr}.az-main-grid .chart-wrap{height:280px}}
@@ -543,7 +589,7 @@ img{display:block}
       <button class="nav-tab active" data-tab="dashboard">대시보드</button>
       <button class="nav-tab" data-tab="analysis">종목 분석</button>
       <button class="nav-tab" data-tab="ranking">종목 랭킹</button>
-      <button class="nav-tab" data-tab="compare">비교분석</button>
+      <button class="nav-tab" data-tab="compare">비교 분석</button>
       <button class="nav-tab" data-tab="watchlist">관심종목</button>
     </div>
     <div class="nav-right">
@@ -640,9 +686,9 @@ img{display:block}
     <div class="table-wrap"><div class="table-scroll"><table class="data-table" id="ranking-table"></table></div></div>
   </div>
 
-  <!-- TAB: 비교분석 -->
+  <!-- TAB: 비교 분석 -->
   <div class="tab-view" id="tab-compare">
-    <div class="section-head"><h2>비교분석 <span class="sub">최대 3종목의 밸류에이션·재무 비교</span></h2></div>
+    <div class="section-head"><h2>비교 분석 <span class="sub">최대 3종목의 밸류에이션·재무 비교</span></h2></div>
     <div class="compare-top">
       <div class="cmp-selbar">
         <div class="cmp-selected" id="compare-selected"></div>
@@ -651,10 +697,10 @@ img{display:block}
           <div class="cmp-list" id="compare-list"></div>
         </div>
       </div>
-      <div class="chart-card compare-cap-card">
-        <h3>시가총액 비교</h3>
-        <div class="ch-sub">선택 종목 비중</div>
-        <div class="chart-wrap"><canvas id="chart-compare-cap"></canvas></div>
+      <div class="chart-card compare-metric-card">
+        <h3>지표 비교</h3>
+        <div class="ch-sub">선택 종목 핵심 지표</div>
+        <div id="compare-metric-table"></div>
       </div>
     </div>
     <div id="compare-body"></div>

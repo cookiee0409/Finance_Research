@@ -691,6 +691,14 @@ async function renderAnalysisBody(){
       <div class="az-card"><div class="az-card-head"><h3>배당 정보</h3></div><div id="kv-div"></div></div>
     </div>
 
+    <div class="analysis-extra-grid">
+      <div class="az-card"><div class="az-card-head"><h3>밸류에이션</h3></div><div id="az-valuation"></div></div>
+      <div class="az-card"><div class="az-card-head"><h3>주주 구성 <span class="sub">보유 비중</span></h3></div><div id="az-holder"></div></div>
+      <div class="az-card"><div class="az-card-head"><h3>유통주식 비율</h3></div><div id="az-float"></div></div>
+      <div class="az-card"><div class="az-card-head"><h3>외국인 보유율 추이</h3></div><div class="chart-wrap" id="foreign-rate-wrap"><canvas id="chart-foreign-rate"></canvas></div></div>
+      <div class="az-card wide"><div class="az-card-head"><h3>월별 수익률 히트맵</h3></div><div id="return-heatmap"></div></div>
+    </div>
+
     <div class="az-footer">
       <span class="fl">📅 데이터 기준</span>
       <span class="ev">시세 기준일 <b>${h(DATA.basisDate||'-')}</b> 종가</span>
@@ -708,6 +716,7 @@ async function renderAnalysisBody(){
 
   renderTradeTrend(s);
   renderAzMetrics(s);
+  renderAnalysisExtras(s, null);
   startClock();
 
   ensureSpark(s.code).then(sp=>{
@@ -719,6 +728,7 @@ async function renderAnalysisBody(){
     renderReturn(s, sp);
     renderTradeTrend(s, sp);
     renderCoreGauge(s);
+    renderAnalysisExtras(s, sp);
   });
 
   // 상세 데이터 — 외국인보유율·정확 PBR·수급차트·컨센서스
@@ -727,6 +737,7 @@ async function renderAnalysisBody(){
     renderAzMetrics(s, curSpark);
     renderSupply(s);
     renderCoreGauge(s);
+    renderAnalysisExtras(s, curSpark);
   });
 
   await ensureFinancials(s.code);
@@ -735,6 +746,7 @@ async function renderAnalysisBody(){
   renderAzMetrics(s, curSpark);
   renderDividend(s);
   renderCoreGauge(s);
+  renderAnalysisExtras(s, curSpark);
   // 업종 평균 PER/PBR — 섹터 피어 재무 로딩 후 헤더 지표 갱신
   ensureSectorFin(s.sector).then(()=>{ if(s.code===selectedCode) renderAzMetrics(s, curSpark); });
 }
@@ -913,6 +925,111 @@ function renderCoreGauge(s){
     <div class="r"><span class="k">배당수익률</span><span class="v">${dy!=null?dy.toFixed(2)+'%':'—'}</span></div>
     <div class="r"><span class="k">PER (12M)</span><span class="v">${s.per>0?s.per.toFixed(1)+'배':'N/A'}</span></div>
     <div class="r"><span class="k">PBR (최근)</span><span class="v">${pbr!=null?pbr.toFixed(2)+'배':'N/A'}</span></div>`;
+}
+
+function renderAnalysisExtras(s, sp){
+  renderValuationPanel(s);
+  renderHolderPanel(s);
+  renderFloatPanel(s);
+  renderForeignRateTrend(s);
+  renderMonthlyHeatmap(sp);
+}
+
+function renderValuationPanel(s){
+  const box=el('az-valuation'); if(!box) return;
+  const nv=s.naver||null;
+  const rows=[
+    ['PER', s.per>0?s.per:(nv&&nv.per>0?nv.per:null), sectorAvg(s.sector,x=>x.per>0?x.per:null), '배'],
+    ['PBR', pbrOfBest(s), sectorAvg(s.sector,x=>pbrOfBest(x)), '배'],
+    ['ROE', s.roe, sectorAvg(s.sector,x=>x.roe), '%'],
+    ['배당수익률', divYieldOf(s) ?? (nv?nv.divYield:null), sectorAvg(s.sector,x=>divYieldOf(x)), '%'],
+  ];
+  const vals = rows.flatMap(r=>[r[1],r[2]]).filter(v=>v!=null && isFinite(v));
+  const max = Math.max(...vals, 1);
+  box.innerHTML = `<div class="az-mini-table">${rows.map(([name,val,avg,unit])=>{
+    const w = val!=null ? Math.max(4, Math.min(100, val/max*100)) : 0;
+    const av = avg!=null ? Math.max(4, Math.min(100, avg/max*100)) : 0;
+    return `<div>
+      <div class="az-mini-row"><div class="nm">${name}</div><div class="track"><div class="fill" style="width:${w}%"></div></div><div class="vv">${val!=null?Number(val).toFixed(unit==='%'?1:2)+unit:'N/A'}</div></div>
+      <div class="az-mini-row" style="opacity:.68"><div class="nm">업종 평균</div><div class="track"><div class="fill" style="width:${av}%;background:linear-gradient(90deg,#CBD5E1,#7A92A8)"></div></div><div class="vv">${avg!=null?Number(avg).toFixed(unit==='%'?1:2)+unit:'N/A'}</div></div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderHolderPanel(s){
+  const box=el('az-holder'); if(!box) return;
+  const fr=s.naver&&s.naver.foreignRate!=null ? clampN(s.naver.foreignRate,0,100) : null;
+  if(fr==null){
+    box.innerHTML=`<div class="heat-empty">외국인 보유율 데이터가 아직 준비되지 않았습니다.</div>`;
+    return;
+  }
+  const rest=+(100-fr).toFixed(2);
+  box.innerHTML=`<div class="holder-wrap"><div class="chart-wrap" style="height:180px"><canvas id="chart-holder"></canvas></div>
+    <div class="holder-legend">
+      <div class="holder-line"><span class="k"><span class="dot" style="background:${COLOR.loss}"></span>외국인</span><span class="v">${fr.toFixed(2)}%</span></div>
+      <div class="holder-line"><span class="k"><span class="dot" style="background:${COLOR.teal}"></span>국내/기타</span><span class="v">${rest.toFixed(2)}%</span></div>
+      <div class="holder-line" style="color:var(--text3);font-size:11px">기관·개인 세부 보유 비중은 현재 원천 미연동</div>
+    </div></div>`;
+  mountChart('chart-holder',{
+    type:'doughnut',
+    data:{labels:['외국인','국내/기타'],datasets:[{data:[fr,rest],backgroundColor:[COLOR.loss,COLOR.teal],borderWidth:3,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},centerText:{lines:['외국인 보유율',fr.toFixed(2)+'%']},tooltip:{...baseTooltip(),callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw.toFixed(2)}%`}}}},
+    plugins:[centerTextPlugin]
+  });
+}
+
+function renderFloatPanel(s){
+  const box=el('az-float'); if(!box) return;
+  const floatRate = s.floatRate ?? null;
+  if(floatRate==null){
+    box.innerHTML=`<div class="heat-empty">유통주식수/유통비율은 현재 공시 원천 미연동입니다.</div>`;
+    return;
+  }
+  const locked = clampN(100-floatRate,0,100);
+  box.innerHTML=`<div class="holder-wrap"><div class="chart-wrap" style="height:180px"><canvas id="chart-float"></canvas></div>
+    <div class="holder-legend">
+      <div class="holder-line"><span class="k"><span class="dot" style="background:${COLOR.loss}"></span>유통주식</span><span class="v">${floatRate.toFixed(2)}%</span></div>
+      <div class="holder-line"><span class="k"><span class="dot" style="background:#CBD5E1"></span>비유통주식</span><span class="v">${locked.toFixed(2)}%</span></div>
+    </div></div>`;
+  mountChart('chart-float',{type:'doughnut',data:{labels:['유통주식','비유통주식'],datasets:[{data:[floatRate,locked],backgroundColor:[COLOR.loss,'#CBD5E1'],borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'66%',plugins:{legend:{display:false},centerText:{lines:['유통주식 비율',floatRate.toFixed(2)+'%']},tooltip:baseTooltip(v=>v.toFixed(2)+'%')}},plugins:[centerTextPlugin]});
+}
+
+function renderForeignRateTrend(s){
+  const wrap=el('foreign-rate-wrap'); if(!wrap || typeof Chart==='undefined') return;
+  const sup=s.naver&&s.naver.supply||[];
+  const rows=sup.filter(d=>d.foreignRate!=null);
+  if(rows.length<2){
+    const canvas=el('chart-foreign-rate');
+    const ex=canvas?Chart.getChart(canvas):null; if(ex) ex.destroy();
+    wrap.innerHTML='<canvas id="chart-foreign-rate" style="display:none"></canvas><div class="heat-empty">외국인 보유율 추이 데이터가 부족합니다.</div>';
+    return;
+  }
+  wrap.innerHTML='<canvas id="chart-foreign-rate"></canvas>';
+  mountChart('chart-foreign-rate',{
+    type:'line',
+    data:{labels:rows.map(d=>fmtD(d.date)),datasets:[{label:'외국인 보유율',data:rows.map(d=>d.foreignRate),borderColor:COLOR.loss,backgroundColor:'rgba(37,99,235,.08)',fill:true,tension:.3,pointRadius:2.5,pointHoverRadius:5,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{...baseTooltip(),callbacks:{label:ctx=>` 외국인 보유율: ${ctx.raw.toFixed(2)}%`}}},scales:{x:{grid:{display:false},ticks:{font:{family:FONT,size:10},color:COLOR.text3}},y:{grid:{color:COLOR.grid},border:{display:false},ticks:{font:{family:FONT,size:10},color:COLOR.text3,callback:v=>v+'%'}}}}
+  });
+}
+
+function renderMonthlyHeatmap(sp){
+  const box=el('return-heatmap'); if(!box) return;
+  if(!sp||!sp.dates||!sp.close||sp.close.length<20){ box.innerHTML='<div class="heat-empty">월별 수익률을 계산할 가격 이력이 부족합니다.</div>'; return; }
+  const months=[];
+  let cur=null;
+  sp.dates.forEach((d,i)=>{
+    const key=d.slice(0,6);
+    if(!cur || cur.key!==key){ if(cur) months.push(cur); cur={key,first:sp.close[i],last:sp.close[i]}; }
+    else cur.last=sp.close[i];
+  });
+  if(cur) months.push(cur);
+  const rows=months.slice(-12).map(m=>({label:`${m.key.slice(2,4)}.${+m.key.slice(4,6)}`,ret:m.first>0?+((m.last-m.first)/m.first*100).toFixed(2):0}));
+  const maxAbs=Math.max(...rows.map(r=>Math.abs(r.ret)),1);
+  box.innerHTML=`<div class="heatmap">${rows.map(r=>{
+    const a=Math.abs(r.ret)/maxAbs;
+    const col=r.ret>=0?`rgba(226,59,59,${0.38+a*.62})`:`rgba(37,99,235,${0.38+a*.62})`;
+    return `<div class="heat-cell" style="background:${col}"><div class="m">${r.label}</div><div class="r">${r.ret>=0?'+':''}${r.ret}%</div></div>`;
+  }).join('')}</div>`;
 }
 
 function finEmptyHtml(){ return `<div class="fin-empty"><div class="ico">📄</div>이 종목은 DART 재무제표를 제공하지 않습니다.<br>(우선주·리츠·스팩 등은 별도 재무가 없을 수 있습니다.)</div>`; }
@@ -1294,6 +1411,7 @@ function renderRanking(){
 // ─────────────────────────────────────────────────────────────
 let compareSector = 'ALL';
 let comparePage = 0;
+let compareQuery = '';
 const COMPARE_PAGE_SIZE = 5;
 function renderCompare(){
   // 선택된 종목 태그
@@ -1308,7 +1426,9 @@ function renderCompare(){
     `<button class="chip ${compareSector==='ALL'?'on':''}" onclick="setCompareSector('ALL')">전체<small>${STOCKS.length}</small></button>` +
     sectors.map(s=>`<button class="chip ${s===compareSector?'on':''}" onclick="setCompareSector('${encodeURIComponent(s)}')">${h(s)}<small>${counts[s]}</small></button>`).join('');
   // 섹터별 종목 목록(페이지형 선택)
-  const list = STOCKS.filter(s=>compareSector==='ALL'||(s.sector||'기타')===compareSector)
+  const q = compareQuery.trim().toLowerCase();
+  const list = STOCKS.filter(s=>(compareSector==='ALL'||(s.sector||'기타')===compareSector) &&
+                    (!q || [s.name,s.code,s.market,s.sector].some(v=>(v||'').toLowerCase().includes(q))))
                      .sort((a,b)=>b.marketCap-a.marketCap);
   const pages = Math.max(1, Math.ceil(list.length/COMPARE_PAGE_SIZE));
   comparePage = clampN(comparePage, 0, pages-1);
@@ -1316,6 +1436,7 @@ function renderCompare(){
   const full = compareSel.length>=3;
   el('compare-list').innerHTML = `
     <div class="cmp-list-controls">
+      <input class="cmp-search" value="${h(compareQuery)}" oninput="setCompareQuery(this.value)" placeholder="종목명·코드·시장·업종 검색">
       <select class="cmp-select" ${full?'disabled':''} onchange="addCompareFromSelect(this.value); this.value=''">
         <option value="">${full?'최대 3종목까지 선택됨':'종목 선택'}</option>
         ${pageItems.filter(s=>!compareSel.includes(s.code)).map(s=>`<option value="${h(s.code)}">${h(s.name)} · ${h(s.code)} · ${h(s.market||'')}</option>`).join('')}
@@ -1326,23 +1447,32 @@ function renderCompare(){
         <button class="cmp-page-btn" ${comparePage>=pages-1?'disabled':''} onclick="setComparePage(${comparePage+1})" title="다음 페이지">›</button>
       </div>
       <div class="cmp-page-list">
-        ${pageItems.map(s=>{
+        ${pageItems.length?pageItems.map(s=>{
     const on = compareSel.includes(s.code);
     const dis = full && !on;
     return `<div class="cmp-page-row ${on?'on':''} ${dis?'dis':''}" ${dis?'':`onclick="toggleCompare('${s.code}')"`}>
       <div><div class="cmp-row-name">${h(s.name)}</div><div class="cmp-row-meta">${h(s.code)} · ${h(s.market||'')} · ${h(s.sector||'')}</div></div>
       <span class="cmp-row-state">${on?'선택됨':'선택'}</span>
     </div>`;
-  }).join('')}
+  }).join(''):`<div class="cmp-page-row dis"><div><div class="cmp-row-name">검색 결과 없음</div><div class="cmp-row-meta">검색어를 줄이거나 섹터를 전체로 바꿔보세요</div></div></div>`}
       </div>
     </div>`;
-  renderCompareCap(compareSel.map(getStock).filter(Boolean));
   renderCompareBody();
 }
 function setCompareSector(s){ compareSector = decodeURIComponent(s); comparePage = 0; renderCompare(); }
 window.setCompareSector = setCompareSector;
 function setComparePage(p){ comparePage = p; renderCompare(); }
 window.setComparePage = setComparePage;
+function setCompareQuery(q){
+  compareQuery = q || '';
+  comparePage = 0;
+  renderCompare();
+  setTimeout(()=>{
+    const input=document.querySelector('.cmp-search');
+    if(input){ input.focus(); const p=input.value.length; input.setSelectionRange(p,p); }
+  },0);
+}
+window.setCompareQuery = setCompareQuery;
 function addCompareFromSelect(code){ if(code) toggleCompare(code); }
 window.addCompareFromSelect = addCompareFromSelect;
 function toggleCompare(code){
@@ -1353,20 +1483,11 @@ function toggleCompare(code){
 }
 window.toggleCompare = toggleCompare;
 
-async function renderCompareBody(){
-  const picks = compareSel.map(getStock).filter(Boolean);
-  if(picks.length<2){
-    el('compare-body').innerHTML = `<div class="empty-state"><div class="ico">⚖️</div><h3>2종목 이상 선택하세요</h3><p>위에서 비교할 종목을 골라주세요.</p></div>`;
-    return;
-  }
-  await Promise.all(picks.map(s=>ensureFinancials(s.code)));
+function compareRowsDef(){
   const last = (arr)=> (arr&&arr.length)?arr[arr.length-1]:null;
-  // raw: 우위 판정용 숫자값, best: 'max'|'min' (없으면 판정 안 함)
-  const rowsDef = [
-    ['현재가', s=>num(s.price)],
-    ['등락률', s=>`<span class="${cls(s.change)}">${pct(s.change)}</span>`],
+  return [
     ['시가총액', s=>fmtCap(s.marketCap), s=>s.marketCap, 'max'],
-    ['거래량', s=>num(s.volume)],
+    ['거래량', s=>num(s.volume), s=>s.volume, 'max'],
     ['PER', s=>s.per>0?s.per.toFixed(1)+'배':'N/A', s=>s.per>0?s.per:null, 'min'],
     ['ROE', s=>ratio(s.roe), s=>s.roe, 'max'],
     ['영업이익률', s=>ratio(s.opMarginNow), s=>s.opMarginNow, 'max'],
@@ -1376,19 +1497,44 @@ async function renderCompareBody(){
     ['최근 영업이익', s=>fmtEok(last(s.operatingProfit)), s=>last(s.operatingProfit), 'max'],
     ['최근 순이익', s=>fmtEok(last(s.netProfit)), s=>last(s.netProfit), 'max'],
   ];
-  const rowHtml = (r)=>{
-    const [label, fmt, raw, best] = r;
-    let bestIdx = -1;
-    if(raw && best){
-      const vals = picks.map(s=>raw(s));
-      const valid = vals.map((v,i)=>[v,i]).filter(([v])=>v!=null && isFinite(v));
-      if(valid.length>1){
-        valid.sort((a,b)=> best==='max' ? b[0]-a[0] : a[0]-b[0]);
-        if(valid[0][0]!==valid[1][0]) bestIdx = valid[0][1];
-      }
+}
+function compareRowHtml(picks, r){
+  const [label, fmt, raw, best] = r;
+  let bestIdx = -1;
+  if(raw && best){
+    const vals = picks.map(s=>raw(s));
+    const valid = vals.map((v,i)=>[v,i]).filter(([v])=>v!=null && isFinite(v));
+    if(valid.length>1){
+      valid.sort((a,b)=> best==='max' ? b[0]-a[0] : a[0]-b[0]);
+      if(valid[0][0]!==valid[1][0]) bestIdx = valid[0][1];
     }
-    return `<tr><td class="td-name">${label}</td>${picks.map((s,i)=>`<td class="num ${i===bestIdx?'best':''}">${fmt(s)}</td>`).join('')}</tr>`;
-  };
+  }
+  return `<tr><td>${label}</td>${picks.map((s,i)=>`<td class="${i===bestIdx?'best':''}">${fmt(s)}</td>`).join('')}</tr>`;
+}
+function renderCompareMetricTable(picks){
+  const box=el('compare-metric-table'); if(!box) return;
+  if(picks.length<2){
+    box.innerHTML=`<div class="heat-empty">2종목 이상 선택하면 핵심 지표표가 표시됩니다.</div>`;
+    return;
+  }
+  box.innerHTML = `<div class="compare-table-wrap"><table class="compare-table">
+    <thead><tr><th>지표</th>${picks.map(s=>`<th>${h(s.name)}<div class="td-code" style="text-transform:none">${h(s.market)}</div></th>`).join('')}</tr></thead>
+    <tbody>${compareRowsDef().map(r=>compareRowHtml(picks,r)).join('')}</tbody>
+  </table></div>
+  <div style="font-size:11px;color:var(--text3);margin-top:8px">항목별 우위 표시 · PER·부채비율은 낮을수록 우위</div>`;
+}
+
+async function renderCompareBody(){
+  const picks = compareSel.map(getStock).filter(Boolean);
+  const pickKey = picks.map(s=>s.code).join(',');
+  if(picks.length<2){
+    renderCompareMetricTable(picks);
+    el('compare-body').innerHTML = `<div class="empty-state"><div class="ico">⚖️</div><h3>2종목 이상 선택하세요</h3><p>위에서 비교할 종목을 골라주세요.</p></div>`;
+    return;
+  }
+  await Promise.all(picks.map(s=>ensureFinancials(s.code)));
+  if(compareSel.join(',') !== pickKey) return;
+  renderCompareMetricTable(picks);
   // 안정성 업종 보정 안내 (#1)
   const adjPicks = picks.filter(s=>STAB_DENOM[s.sector]);
   const adjNote = adjPicks.length
@@ -1397,21 +1543,23 @@ async function renderCompareBody(){
 
   el('compare-body').innerHTML = `
     <div class="compare-viz">
-      <div class="chart-card">
-        <h3>연도별 매출 비교</h3>
-        <div class="ch-sub">각 종목 첫 표시 연도 매출을 100으로 환산${(()=>{ const rl=picks.filter(s=>!(s.revenue||[]).some(v=>v!=null&&v>0)); return rl.length?` · ${rl.map(s=>h(s.name)).join(', ')}는 매출(영업수익) 구분이 없어 제외`:''; })()}</div>
-        <div class="chart-wrap" style="height:300px"><canvas id="chart-compare"></canvas></div>
-        ${adjNote}
+      <div class="chart-card vis-card compare-cap-card">
+        <h3>시가총액 비교</h3>
+        <div class="ch-sub">선택 종목 비중</div>
+        <div class="chart-wrap"><canvas id="chart-compare-cap"></canvas></div>
       </div>
-    </div>
-    <div class="table-wrap"><div class="table-scroll">
-      <table class="data-table">
-        <thead><tr><th>지표</th>${picks.map(s=>`<th class="num">${h(s.name)}<div class="td-code" style="text-transform:none">${h(s.market)}</div></th>`).join('')}</tr></thead>
-        <tbody>${rowsDef.map(rowHtml).join('')}</tbody>
-      </table>
-    </div></div>
-    <div style="font-size:11.5px;color:var(--text3);margin-top:8px;padding:0 4px">✦ 항목별 우위 종목 표시 · PER·부채비율은 낮을수록, 나머지는 높을수록 우위</div>`;
-  renderCompareChart(picks);
+      <div class="chart-card vis-card">
+        <h3>실적 비교</h3>
+        <div class="ch-sub">최근 연간 실적을 항목별 상대지수로 표시</div>
+        <div class="chart-wrap"><canvas id="chart-compare-performance"></canvas></div>
+      </div>
+      <div class="chart-card vis-card">
+        <h3>밸류에이션 비교</h3>
+        <div class="ch-sub">PER·PBR·ROE·배당수익률</div>
+        <div id="compare-valuation"></div>
+      </div>
+    </div>${adjNote}`;
+  renderCompareVisuals(picks);
 }
 
 // 안정성 업종 보정: 부채비율 0점 기준(denominator). 일반=250%, 고레버리지 업종은 완화.
@@ -1460,34 +1608,61 @@ function renderCompareCap(picks){
     plugins:[centerTextPlugin]
   });
 }
-// 연도별 매출 비교 — 공통 연도축에 종목별 매출 매핑 (#4: years 길이 달라도 정렬)
-function renderCompareChart(picks){
-  const withFin = picks.filter(s=>s.years && s.years.length && (s.revenue||[]).some(v=>v!=null&&v>0));
-  if(!withFin.length){ const c=el('chart-compare'); if(c&&typeof Chart!=='undefined'){const ex=Chart.getChart(c);if(ex)ex.destroy();} return; }
-  const yearSet = new Set();
-  withFin.forEach(s=>s.years.forEach(y=>yearSet.add(y)));
-  const years = [...yearSet].sort((a,b)=>a-b);
-  const labels = years.map(y=>y+'');
-  const palette = [COLOR.navy, COLOR.teal, COLOR.gold];
-  const rawByDataset = withFin.map(s=>years.map(y=>{ const idx=s.years.indexOf(y); return idx>=0 ? s.revenue[idx] : null; }));
-  const baseByDataset = rawByDataset.map(arr=>arr.find(v=>v!=null && v>0) || null);
-  mountChart('chart-compare', {
-    type:'line',
-    data:{ labels, datasets:withFin.map((s,i)=>{
-      const base = baseByDataset[i];
-      return {
-      label:s.name,
-      data:rawByDataset[i].map(v=>v!=null && base ? +(v/base*100).toFixed(1) : null),
-      borderColor:palette[i%3], backgroundColor:palette[i%3],
-      borderWidth:2.5, tension:.35, pointRadius:4, pointHoverRadius:6, pointBorderColor:'#fff', pointBorderWidth:2, fill:false, spanGaps:true
-    };})},
-    options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false}, animation:{duration:500,easing:'easeOutQuart'},
-      plugins:{ legend:baseLegend(), tooltip:{...baseTooltip(), callbacks:{ label:ctx=>{
-        const raw = rawByDataset[ctx.datasetIndex]?.[ctx.dataIndex];
-        return ` ${ctx.dataset.label}: 지수 ${ctx.raw}${ctx.raw==null?'':' '}(${raw!=null?fmtEok(raw)+'원':'-'})`;
-      } }} },
-      scales:baseScales({ y:{ grid:{color:COLOR.grid,drawBorder:false}, border:{display:false}, ticks:{font:{family:FONT,size:11},color:COLOR.text3,padding:6,callback:v=>v}, grace:'10%' } }) }
+function renderCompareVisuals(picks){
+  renderCompareCap(picks);
+  renderComparePerformance(picks);
+  renderCompareValuation(picks);
+}
+function renderComparePerformance(picks){
+  const last = arr => (arr&&arr.length)?arr[arr.length-1]:null;
+  const metrics = [
+    {key:'revenue', label:'매출', color:COLOR.navy, raw:s=>last(s.revenue)},
+    {key:'op', label:'영업이익', color:COLOR.teal, raw:s=>last(s.operatingProfit)},
+    {key:'net', label:'순이익', color:COLOR.gold, raw:s=>last(s.netProfit)},
+  ];
+  const raw = metrics.map(m=>picks.map(s=>m.raw(s)));
+  const maxByMetric = raw.map(arr=>Math.max(...arr.map(v=>Math.abs(Number(v)||0)), 1));
+  mountChart('chart-compare-performance', {
+    type:'bar',
+    data:{
+      labels:picks.map(s=>s.name),
+      datasets:metrics.map((m,mi)=>({
+        label:m.label,
+        data:raw[mi].map(v=>v==null?null:+((Number(v)||0)/maxByMetric[mi]*100).toFixed(1)),
+        backgroundColor:m.color,
+        borderRadius:4,
+        maxBarThickness:30,
+      }))
+    },
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},animation:{duration:450,easing:'easeOutQuart'},
+      plugins:{legend:baseLegend(),tooltip:{...baseTooltip(),callbacks:{label:ctx=>{
+        const v=raw[ctx.datasetIndex]?.[ctx.dataIndex];
+        return ` ${ctx.dataset.label}: ${v!=null?fmtEok(v):'N/A'}원`;
+      }}}},
+      scales:baseScales({y:{min:-100,max:100,grid:{color:COLOR.grid},border:{display:false},ticks:{font:{family:FONT,size:10.5},color:COLOR.text3,callback:v=>v}}})}
   });
+}
+function renderCompareValuation(picks){
+  const box=el('compare-valuation'); if(!box) return;
+  const metrics=[
+    ['PER', s=>s.per>0?s.per:null, '배'],
+    ['PBR', s=>pbrOfBest(s), '배'],
+    ['ROE', s=>s.roe, '%'],
+    ['배당', s=>divYieldOf(s), '%'],
+  ];
+  const valsByMetric=metrics.map(([_,fn])=>picks.map(fn));
+  const maxByMetric=valsByMetric.map(vals=>Math.max(...vals.filter(v=>v!=null && isFinite(v)).map(v=>Math.abs(v)), 1));
+  box.innerHTML=`<div class="valuation-grid">
+    <div class="valuation-row head"><div>종목명</div>${metrics.map(([m])=>`<div>${m}</div>`).join('')}</div>
+    ${picks.map(s=>`<div class="valuation-row">
+      <div class="valuation-name">${h(s.name)}</div>
+      ${metrics.map(([_,fn,unit],mi)=>{
+        const v=fn(s);
+        const w=v!=null&&isFinite(v)?Math.max(5,Math.min(100,Math.abs(v)/maxByMetric[mi]*100)):0;
+        return `<div class="valuation-cell"><span class="bar" style="width:${w}%"></span><span class="v">${v!=null&&isFinite(v)?Number(v).toFixed(unit==='%'?1:2):'N/A'}${v!=null&&isFinite(v)?unit:''}</span></div>`;
+      }).join('')}
+    </div>`).join('')}
+  </div>`;
 }
 
 // ─────────────────────────────────────────────────────────────
