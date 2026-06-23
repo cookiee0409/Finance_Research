@@ -856,13 +856,24 @@ function renderLiveQuote(s){
   if(curSpark) renderPriceArea();
 }
 
+function perOfBest(s){
+  if(s && s.per>0) return s.per;
+  const nv=s&&s.naver;
+  if(nv && nv.per>0) return nv.per;
+  if(nv && nv.cnsPer>0) return nv.cnsPer;
+  return null;
+}
 function pbrOfBest(s){ return (s.naver && s.naver.pbr!=null) ? s.naver.pbr : pbrOf(s); }
+function fmtPlainMetric(v, digits=1){
+  if(v==null || !isFinite(v)) return 'N/A';
+  return Number(Number(v).toFixed(digits)).toLocaleString('ko-KR', { maximumFractionDigits:digits });
+}
 function renderAzMetrics(s, sp){
   const box=el('azh-metrics'); if(!box) return;
   const nv=s.naver||null;
   const rank=marketRank(s);
-  const per=s.per>0?s.per:(nv&&nv.per>0?nv.per:null);
-  const perAvg=sectorAvg(s.sector, x=>x.per>0?x.per:null);
+  const per=perOfBest(s);
+  const perAvg=sectorAvg(s.sector, x=>perOfBest(x));
   const pbr=pbrOfBest(s);
   const pbrAvg=sectorAvg(s.sector, x=>pbrOfBest(x));
   const dy=divYieldOf(s) ?? (nv?nv.divYield:null);
@@ -988,13 +999,13 @@ function renderCoreGauge(s){
     options:{responsive:true, maintainAspectRatio:true, cutout:'74%', animation:{duration:600}, plugins:{legend:{display:false},tooltip:{enabled:false}}}
   });
   const nv=s.naver||null;
-  const dy=divYieldOf(s) ?? (nv?nv.divYield:null), pbr=pbrOfBest(s);
+  const dy=divYieldOf(s) ?? (nv?nv.divYield:null), pbr=pbrOfBest(s), per=perOfBest(s);
   const fr=nv&&nv.foreignRate!=null?nv.foreignRate:null;
   const side=el('gauge-side');
   if(side) side.innerHTML=`
     <div class="r"><span class="k">외국인 보유율</span><span class="v">${fr!=null?fr.toFixed(2)+'%':'—'}</span></div>
     <div class="r"><span class="k">배당수익률</span><span class="v">${dy!=null?dy.toFixed(2)+'%':'—'}</span></div>
-    <div class="r"><span class="k">PER (12M)</span><span class="v">${s.per>0?s.per.toFixed(1)+'배':'N/A'}</span></div>
+    <div class="r"><span class="k">PER (12M)</span><span class="v">${per!=null?per.toFixed(1)+'배':'N/A'}</span></div>
     <div class="r"><span class="k">PBR (최근)</span><span class="v">${pbr!=null?pbr.toFixed(2)+'배':'N/A'}</span></div>`;
 }
 
@@ -1009,7 +1020,7 @@ function renderValuationPanel(s){
   const box=el('az-valuation'); if(!box) return;
   const nv=s.naver||null;
   const rows=[
-    ['PER', s.per>0?s.per:(nv&&nv.per>0?nv.per:null), sectorAvg(s.sector,x=>x.per>0?x.per:null), '배'],
+    ['PER', perOfBest(s), sectorAvg(s.sector,x=>perOfBest(x)), '배'],
     ['PBR', pbrOfBest(s), sectorAvg(s.sector,x=>pbrOfBest(x)), '배'],
     ['ROE', s.roe, sectorAvg(s.sector,x=>x.roe), '%'],
     ['배당수익률', divYieldOf(s) ?? (nv?nv.divYield:null), sectorAvg(s.sector,x=>divYieldOf(x)), '%'],
@@ -1151,7 +1162,7 @@ function renderIncomeDonuts(s){
 
 function renderAnalysisMetrics(s){
   const metrics = [
-    ['PER', s.per>0 ? s.per.toFixed(1)+'배' : 'N/A'],
+    ['PER', perOfBest(s)!=null ? perOfBest(s).toFixed(1)+'배' : 'N/A'],
     ['ROE', ratio(s.roe)],
     ['영업이익률', ratio(s.opMarginNow)],
     ['부채비율', s.debtNow!=null ? s.debtNow.toFixed(0)+'%' : 'N/A'],
@@ -1550,7 +1561,7 @@ function compareRowsDef(){
   return [
     ['시가총액', s=>fmtCap(s.marketCap), s=>s.marketCap, 'max'],
     ['거래량', s=>num(s.volume), s=>s.volume, 'max'],
-    ['PER', s=>s.per>0?s.per.toFixed(1)+'배':'N/A', s=>s.per>0?s.per:null, 'min'],
+    ['PER', s=>perOfBest(s)!=null?perOfBest(s).toFixed(1)+'배':'N/A', s=>perOfBest(s), 'min'],
     ['ROE', s=>ratio(s.roe), s=>s.roe, 'max'],
     ['영업이익률', s=>ratio(s.opMarginNow), s=>s.opMarginNow, 'max'],
     ['부채비율', s=>{const d=last(s.debtRatio); return d!=null?d.toFixed(0)+'%':'N/A';}, s=>last(s.debtRatio), 'min'],
@@ -1638,7 +1649,7 @@ function compScores(s){
     s.opMarginNow!=null ? clampN(s.opMarginNow/25*100, 0, 100) : 0,
     stabilityScore(s),
     g!=null             ? clampN((g+20)/60*100, 0, 100) : 50,
-    (s.per&&s.per>0)    ? clampN(100-(s.per-5)*(90/55), 10, 100) : 30,
+    perOfBest(s)!=null   ? clampN(100-(perOfBest(s)-5)*(90/55), 10, 100) : 30,
   ].map(v=>+v.toFixed(0));
 }
 function renderCompareCap(picks){
@@ -1707,7 +1718,7 @@ function renderComparePerformance(picks){
 function renderCompareValuation(picks){
   const box=el('compare-valuation'); if(!box) return;
   const metrics=[
-    ['PER', s=>s.per>0?s.per:null, '배'],
+    ['PER', s=>perOfBest(s), '배'],
     ['PBR', s=>pbrOfBest(s), '배'],
     ['ROE', s=>s.roe, '%'],
     ['배당', s=>divYieldOf(s), '%'],
@@ -1715,13 +1726,13 @@ function renderCompareValuation(picks){
   const valsByMetric=metrics.map(([_,fn])=>picks.map(fn));
   const maxByMetric=valsByMetric.map(vals=>Math.max(...vals.filter(v=>v!=null && isFinite(v)).map(v=>Math.abs(v)), 1));
   box.innerHTML=`<div class="valuation-grid">
-    <div class="valuation-row head"><div>종목명</div>${metrics.map(([m])=>`<div>${m}</div>`).join('')}</div>
+    <div class="valuation-row head"><div>종목명</div>${metrics.map(([m,,unit])=>`<div>${m} (${unit})</div>`).join('')}</div>
     ${picks.map(s=>`<div class="valuation-row">
       <div class="valuation-name">${h(s.name)}</div>
       ${metrics.map(([_,fn,unit],mi)=>{
         const v=fn(s);
         const w=v!=null&&isFinite(v)?Math.max(5,Math.min(100,Math.abs(v)/maxByMetric[mi]*100)):0;
-        return `<div class="valuation-cell"><span class="bar" style="width:${w}%"></span><span class="v">${v!=null&&isFinite(v)?Number(v).toFixed(unit==='%'?1:2):'N/A'}${v!=null&&isFinite(v)?unit:''}</span></div>`;
+        return `<div class="valuation-cell"><span class="bar" style="width:${w}%"></span><span class="v">${fmtPlainMetric(v, unit==='%'?1:2)}</span></div>`;
       }).join('')}
     </div>`).join('')}
   </div>`;
