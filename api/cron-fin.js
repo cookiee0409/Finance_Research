@@ -197,6 +197,8 @@ export default async function handler(req, res) {
   try {
     const universe = (await kvGet('fr_universe')) || [];
     const daymap   = (await kvGet('fr_daymap')) || {};
+    const rankData = (await kvGet('fr_naver_rank_list')) || {};
+    const rankMap  = Object.fromEntries((rankData.list || []).map(r => [r.code, r]));
     if (!universe.length) return res.status(200).json({ ok: false, error: 'fr_universe 없음 (cron-market 먼저 실행)' });
 
     let cursor = (await kvGet('fr_fin_cursor')) || 0;
@@ -205,12 +207,12 @@ export default async function handler(req, res) {
     const done = [], failed = [];
     while (cursor < universe.length && Date.now() - start < CHUNK_BUDGET_MS) {
       const code = universe[cursor];
-      const name = daymap[code]?.n || (CORP_MAP[code]?.n) || code;
+      const name = rankMap[code]?.name || daymap[code]?.n || (CORP_MAP[code]?.n) || code;
       const fin = await buildOne(code, name, KEY);
       if (fin.ok) {
-        // 밸류에이션: 시세(daymap)와 결합 (PER/PBR 근사)
-        const dm = daymap[code];
-        if (dm && fin.eps && fin.eps > 0) fin.per = round1(dm.p / fin.eps);
+        // 밸류에이션: 최신 랭킹 시세를 우선 사용하고, 없으면 daymap으로 보정한다.
+        const price = rankMap[code]?.price || daymap[code]?.p;
+        if (price && fin.eps && fin.eps > 0) fin.per = round1(price / fin.eps);
         await kvSet('fr_fin_' + code, fin);
         done.push(code);
       } else {
