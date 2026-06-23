@@ -82,14 +82,6 @@ const lastPricePlugin = {
     ctx.save();
     ctx.setLineDash([5,4]); ctx.lineWidth=1; ctx.strokeStyle=col+'88';
     ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke();
-    ctx.setLineDash([]);
-    const label = num(opts.price);
-    ctx.font = `700 10.5px Pretendard,sans-serif`;
-    const w = ctx.measureText(label).width + 14;
-    ctx.fillStyle = col;
-    roundRectPath(ctx, right-w, y-10, w, 20, 6); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(label, right-w/2, y+0.5);
     ctx.restore();
   }
 };
@@ -248,7 +240,7 @@ async function ensureFinancials(code){
   s._finLoaded = true; s._finEmpty = !(s.years && s.years.length);
   return s;
 }
-// 네이버 상세(외국인·수급·PBR·컨센서스) 캐시 로딩
+// 상세 캐시 로딩(외국인·수급·PBR·컨센서스)
 async function ensureNaver(code){
   const s = getStock(code); if(!s) return null;
   if(s._naverLoaded) return s.naver;
@@ -569,22 +561,23 @@ function setupPicker(){
   const input = el('stock-picker'), pop = el('picker-pop');
   if(!input || input._bound) return;
   input._bound = true;
+  const topVolume = ()=>DATA.volume.slice(0,5).map(s=>({code:s.code,name:s.name,market:s.market,sector:s.sector,volume:s.volume}));
   const close = ()=>{ pop.classList.remove('show'); pickerActive=-1; };
   const renderPop = (list, emptyMsg)=>{
     pickerResults = list; pickerActive=-1;
     pop.innerHTML = list.length ? list.map((it,i)=>`
       <button class="nsr-item" data-i="${i}" onclick="pickStock('${it.code}')">
         <div class="nsr-main"><div class="nsr-name">${h(it.name)}</div><div class="nsr-code">${h(it.code)}</div></div>
-        <div class="nsr-tags"><span class="nsr-tag">${h(it.market||'')}</span><span class="nsr-tag">${h(it.sector||'')}</span></div>
+        <div class="nsr-tags"><span class="nsr-tag">${h(it.market||'')}</span>${it.volume!=null?`<span class="nsr-tag">거래량 ${fmtVol(it.volume)}</span>`:`<span class="nsr-tag">${h(it.sector||'')}</span>`}</div>
       </button>`).join('')
       : `<div class="nsr-empty">${emptyMsg||'검색 결과가 없습니다.'}</div>`;
     pop.classList.add('show');
   };
-  input.addEventListener('focus', ()=>{ input.select(); renderPop(STOCKS.slice(0,12), null); });
+  input.addEventListener('focus', ()=>{ input.select(); renderPop(topVolume(), null); });
   input.addEventListener('input', ()=>{
     const q = input.value.trim();
     clearTimeout(pickerTimer);
-    if(!q){ renderPop(STOCKS.slice(0,12)); return; }
+    if(!q){ renderPop(topVolume()); return; }
     pickerTimer = setTimeout(async ()=>{
       const ql = q.toLowerCase();
       let list = STOCKS.filter(s=> s.name.toLowerCase().includes(ql) || s.code.includes(q)).slice(0,12);
@@ -665,33 +658,25 @@ async function renderAnalysisBody(){
       </div>
     </div>
 
-    <div class="az-row3">
+    <div class="az-price-row">
       <div class="az-card" id="sec-chart">
         <div class="az-card-head"><h3>주가 차트</h3><div class="chart-ctrls" id="price-controls"></div></div>
-        <div class="ch-sub" id="price-sub" style="margin-bottom:6px">불러오는 중…</div>
-        <div class="chart-wrap" style="height:230px"><canvas id="chart-price"></canvas></div>
-        <div class="az-range" id="az-range"></div>
-      </div>
-      <div class="az-card">
-        <div class="az-card-head"><h3>주가 수익률</h3><div class="az-mini-tabs" id="ret-tabs"></div></div>
-        <div class="az-ret-wrap"><div class="az-ret-chart"><canvas id="chart-return"></canvas></div><div class="az-ret-legend" id="ret-legend"></div></div>
-      </div>
-      <div class="az-card">
-        <div class="az-card-head"><h3>외국인·기관 순매수 <span class="sub">최근 10일 · 네이버</span></h3></div>
-        <div id="supply-wrap"><div class="az-ph"><div class="ico">⏳</div><div class="t">수급 불러오는 중…</div></div></div>
+        <div class="chart-wrap"><canvas id="chart-price"></canvas></div>
       </div>
     </div>
 
-    <div class="az-row3 even">
+    <div class="az-info-grid">
+      <div class="az-card">
+        <div class="az-card-head"><h3>외국인·기관 순매수 <span class="sub">최근 10일</span></h3></div>
+        <div id="supply-wrap"><div class="az-ph"><div class="ico">⏳</div><div class="t">수급 불러오는 중…</div></div></div>
+        <div class="az-ret-simple" id="return-simple"></div>
+      </div>
       <div class="az-card"><div class="az-card-head"><h3>거래 동향</h3></div><div class="az-kv" id="kv-trade"></div></div>
       <div class="az-card"><div class="az-card-head"><h3>배당 정보</h3></div><div id="kv-div"></div></div>
       <div class="az-card"><div class="az-card-head"><h3>핵심 지표</h3></div>
         <div class="az-gauge-wrap"><div class="az-gauge"><canvas id="gauge-core"></canvas><div class="sc"><b id="gauge-sc">–</b><span>지표점수</span></div></div><div class="az-gauge-side" id="gauge-side"></div></div>
       </div>
     </div>
-
-    <div class="az-catnav" id="az-catnav"></div>
-    <div id="az-detail"></div>
 
     <div class="az-footer">
       <span class="fl">📅 데이터 기준</span>
@@ -710,7 +695,6 @@ async function renderAnalysisBody(){
 
   renderTradeTrend(s);
   renderAzMetrics(s);
-  renderCatNav();
   startClock();
 
   ensureSpark(s.code).then(sp=>{
@@ -718,14 +702,13 @@ async function renderAnalysisBody(){
     curSpark = sp;
     renderAzOHLC(s, sp);
     renderAzMetrics(s, sp);
-    renderRange(s, sp);
     renderPriceArea();
     renderReturn(s, sp);
     renderTradeTrend(s, sp);
     renderCoreGauge(s);
   });
 
-  // 네이버 상세 — 외국인보유율·정확 PBR·수급차트·컨센서스
+  // 상세 데이터 — 외국인보유율·정확 PBR·수급차트·컨센서스
   ensureNaver(s.code).then(()=>{
     if(s.code !== selectedCode) return;
     renderAzMetrics(s, curSpark);
@@ -739,7 +722,6 @@ async function renderAnalysisBody(){
   renderAzMetrics(s, curSpark);
   renderDividend(s);
   renderCoreGauge(s);
-  selectCat(curCat);
   // 업종 평균 PER/PBR — 섹터 피어 재무 로딩 후 헤더 지표 갱신
   ensureSectorFin(s.sector).then(()=>{ if(s.code===selectedCode) renderAzMetrics(s, curSpark); });
 }
@@ -789,10 +771,6 @@ function renderAzMetrics(s, sp){
   const pbrAvg=sectorAvg(s.sector, x=>pbrOfBest(x));
   const dy=divYieldOf(s) ?? (nv?nv.divYield:null);
   const payout=s.dividend?.payoutRatio;
-  // 52주 — 네이버 우선, 없으면 spark
-  let hi=nv&&nv.hi52||null, lo=nv&&nv.lo52||null;
-  if((hi==null||lo==null) && sp&&sp.high){ hi=Math.max(...sp.high); lo=Math.min(...sp.low); }
-  let pos=50; if(hi>lo) pos=clampN((s.price-lo)/(hi-lo)*100,0,100);
   const fr=nv&&nv.foreignRate!=null?nv.foreignRate:null;
   const m=(l,v,sub,subcls)=>`<div class="azh-m"><div class="l">${l}</div><div class="v">${v}</div>${sub?`<div class="s ${subcls||''}">${sub}</div>`:''}</div>`;
   box.innerHTML =
@@ -800,16 +778,16 @@ function renderAzMetrics(s, sp){
     m('PER (12M)', per!=null?per.toFixed(1)+'배':'N/A', perAvg!=null?`업종 평균 ${perAvg.toFixed(1)}배`:'&nbsp;') +
     m('PBR (최근)', pbr!=null?pbr.toFixed(2)+'배':'N/A', pbrAvg!=null?`업종 평균 ${pbrAvg.toFixed(2)}배`:'&nbsp;') +
     m('배당수익률', dy!=null?dy.toFixed(2)+'%':'—', payout!=null?`배당성향 ${payout.toFixed(1)}%`:(dy==null?'무배당/미공시':'&nbsp;')) +
-    `<div class="azh-m"><div class="l">52주 최고/최저</div><div class="v" style="font-size:13.5px">${hi!=null?num(hi):'-'} / ${lo!=null?num(lo):'-'}</div><div class="azh-52"><div class="azh-52-track"><div class="azh-52-mk" style="left:${pos.toFixed(0)}%"></div></div></div></div>` +
-    m('외국인 보유율', fr!=null?fr.toFixed(2)+'%':'—', fr!=null?'네이버 외인소진율':'로딩 중');
+    m('거래량', fmtVol(s.volume)+'주', `거래대금 ${fmtCap(Math.round((s.amount||0)/1e8))}`) +
+    m('외국인 보유율', fr!=null?fr.toFixed(2)+'%':'—', fr!=null?'외인소진율':'로딩 중');
 }
 
-// ── 외국인·기관 순매수 차트 (네이버 수급) ───────────────
+// ── 외국인·기관 순매수 차트 ────────────────────────────
 function renderSupply(s){
   const box=el('supply-wrap'); if(!box) return;
   const sup=s.naver&&s.naver.supply;
   if(!sup || !sup.length){
-    box.innerHTML=`<div class="az-ph"><div class="ico">🔒</div><div class="t">수급 데이터 없음</div><div class="d">네이버 수급을 불러오지 못했습니다.</div></div>`;
+    box.innerHTML=`<div class="az-ph"><div class="ico">🔒</div><div class="t">수급 데이터 없음</div><div class="d">수급 데이터를 불러오지 못했습니다.</div></div>`;
     return;
   }
   box.innerHTML=`<div class="chart-wrap" style="height:210px"><canvas id="chart-supply"></canvas></div>
@@ -829,29 +807,17 @@ function renderSupply(s){
   });
 }
 
-// ── 주가차트 하단 52주 범위 ─────────────────────────────
-function renderRange(s, sp){
-  const box=el('az-range'); if(!box) return;
-  if(!sp||!sp.high){ box.style.display='none'; return; }
-  const hi=Math.max(...sp.high), lo=Math.min(...sp.low);
-  if(!(hi>lo)){ box.style.display='none'; return; }
-  const pos=clampN((s.price-lo)/(hi-lo)*100,0,100);
-  const fromLo=((s.price-lo)/lo*100), fromHi=((s.price-hi)/hi*100);
-  box.style.display='block';
-  box.innerHTML=`
-    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:2px">52주 가격 범위</div>
-    <div class="az-range-bar"><div class="az-range-mk" style="left:${pos.toFixed(1)}%"><span class="az-range-cur">${num(s.price)}</span></div></div>
-    <div class="az-range-ends"><span>52주 최저 <b>${num(lo)}</b> · ${fromLo>=0?'+':''}${fromLo.toFixed(1)}%</span><span>52주 최고 <b>${num(hi)}</b> · ${fromHi.toFixed(1)}%</span></div>`;
-}
-
 // ── 주가 수익률 (종목 vs 코스피) ────────────────────────
 const RET_PERIODS=[['1M','1개월',20],['3M','3개월',61],['6M','6개월',122]];
 let retPeriod='3M';
 function setRetPeriod(p){ retPeriod=p; const s=getStock(selectedCode); if(s&&curSpark) renderReturn(s,curSpark); }
 window.setRetPeriod=setRetPeriod;
 function renderReturn(s, sp){
-  const tabs=el('ret-tabs'); if(tabs) tabs.innerHTML=RET_PERIODS.map(([k,l])=>`<button class="${retPeriod===k?'on':''}" onclick="setRetPeriod('${k}')">${l}</button>`).join('');
-  if(!sp||!sp.close||sp.close.length<2) return;
+  const box=el('return-simple'); if(!box) return;
+  if(!sp||!sp.close||sp.close.length<2){
+    box.innerHTML='<div class="az-ph" style="height:110px"><div class="t">수익률 데이터 없음</div></div>';
+    return;
+  }
   const days=(RET_PERIODS.find(p=>p[0]===retPeriod)||[])[2]||61;
   const idx=DATA.overview&&DATA.overview.kospi&&DATA.overview.kospi.spark||[];
   const nStock=Math.min(days, sp.close.length);
@@ -860,26 +826,27 @@ function renderReturn(s, sp){
   const idxSeg=idx.slice(-nIdx);
   const toPct=arr=>{ const b=arr[0]; return arr.map(v=>+( (v-b)/b*100 ).toFixed(2)); };
   const sP=toPct(stockSeg), iP=idxSeg.length?toPct(idxSeg):[];
-  // 공통 길이로 우측 정렬(둘 다 최근일 종료)
-  const L=Math.max(sP.length, iP.length);
-  const labels=Array.from({length:L},(_,i)=>i);
-  const padLeft=(a,n)=>Array(Math.max(0,n-a.length)).fill(null).concat(a);
-  const sData=padLeft(sP,L), iData=iP.length?padLeft(iP,L):[];
-  mountChart('chart-return',{
-    type:'line',
-    data:{labels, datasets:[
-      {label:s.name, data:sData, borderColor:COLOR.gain, backgroundColor:'rgba(226,59,59,.06)', borderWidth:2, pointRadius:0, fill:true, tension:.25, spanGaps:true},
-      ...(iData.length?[{label:'코스피', data:iData, borderColor:COLOR.text3, borderWidth:1.6, borderDash:[4,3], pointRadius:0, fill:false, tension:.25, spanGaps:true}]:[]),
-    ]},
-    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false}, animation:{duration:300},
-      plugins:{legend:{display:false}, tooltip:{...baseTooltip(), callbacks:{title:()=>'',label:ctx=>`${ctx.dataset.label}: ${ctx.raw>=0?'+':''}${ctx.raw}%`}}},
-      scales:{x:{display:false}, y:{position:'right',grid:{color:COLOR.grid},border:{display:false},ticks:{font:{family:FONT,size:10},color:COLOR.text3,callback:v=>(v>=0?'+':'')+v+'%'}}}}
-  });
   const sRet=sP[sP.length-1], iRet=iP.length?iP[iP.length-1]:null;
-  const leg=el('ret-legend');
-  if(leg) leg.innerHTML=`
-    <div class="az-ret-item"><div class="nm"><span class="d" style="background:${COLOR.gain}"></span>${h(s.name)}</div><div class="vv ${cls(sRet)}">${sRet>=0?'+':''}${sRet}%</div></div>
-    ${iRet!=null?`<div class="az-ret-item"><div class="nm"><span class="d" style="background:${COLOR.text3}"></span>코스피</div><div class="vv ${cls(iRet)}">${iRet>=0?'+':''}${iRet}%</div></div>`:''}`;
+  const vals = [sRet, ...(iRet!=null?[iRet]:[])];
+  const maxAbs = Math.max(...vals.map(v=>Math.abs(v)), 1);
+  const bar = (name, val, color)=> {
+    const w = Math.min(50, Math.max(2, Math.abs(val)/maxAbs*50));
+    const dir = val>=0 ? 'pos' : 'neg';
+    return `<div class="az-ret-bar">
+      <div class="nm">${h(name)}</div>
+      <div class="az-ret-track"><span class="az-ret-zero"></span><span class="az-ret-fill ${dir}" style="width:${w}%;background:${color}"></span></div>
+      <div class="vv ${cls(val)}">${val>=0?'+':''}${val}%</div>
+    </div>`;
+  };
+  box.innerHTML = `
+    <div class="az-ret-simple-head">
+      <div class="az-ret-title">주가 수익률</div>
+      <div class="az-mini-tabs">${RET_PERIODS.map(([k,l])=>`<button class="${retPeriod===k?'on':''}" onclick="setRetPeriod('${k}')">${l}</button>`).join('')}</div>
+    </div>
+    <div class="az-ret-bars">
+      ${bar(s.name, sRet, COLOR.gain)}
+      ${iRet!=null?bar('코스피', iRet, COLOR.text3):''}
+    </div>`;
 }
 
 // ── 거래 동향 ───────────────────────────────────────────
@@ -935,88 +902,6 @@ function renderCoreGauge(s){
     <div class="r"><span class="k">PBR (최근)</span><span class="v">${pbr!=null?pbr.toFixed(2)+'배':'N/A'}</span></div>`;
 }
 
-// ── 분석 카테고리 7-nav + 상세 ──────────────────────────
-const CATS=[
-  ['차트분석','📈','주가 차트·이동평균선·거래량'],
-  ['기업분석','🏢','매출·이익·성장 등 핵심 실적'],
-  ['재무분석','📊','부채비율·수익성 등 재무 안정성'],
-  ['수급분석','👥','외국인·기관 수급 (미제공)'],
-  ['밸류에이션','💰','PER·PBR 업종 대비 평가'],
-  ['투자지표','🎯','ROE·부채비율 등 종합 점수'],
-  ['뉴스/공시','📰','실시간 뉴스·공시 (미제공)'],
-];
-let curCat='기업분석';
-function renderCatNav(){
-  const box=el('az-catnav'); if(!box) return;
-  box.innerHTML=CATS.map(([t,ic,d])=>`<button class="az-cat ${t===curCat?'on':''}" onclick="selectCat('${t}')"><div class="ic">${ic}</div><div class="t">${t}</div><div class="d">${d}</div></button>`).join('');
-}
-function selectCat(cat){
-  curCat=cat; renderCatNav();
-  const box=el('az-detail'); if(!box) return;
-  const s=getStock(selectedCode); if(!s) return;
-  if(cat==='차트분석'){
-    box.innerHTML=`<div class="az-card"><div class="az-card-head"><h3>차트 분석</h3></div><div style="font-size:13px;color:var(--text2);line-height:1.7">위 <b>주가 차트</b>에서 캔들·이동평균선(MA5/20/60/120)·거래량을 확인하세요. 기간(일·주·월)과 범위(1개월~1년)를 바꿀 수 있고, <b>크게 보기</b>로 확대됩니다.</div></div>`;
-    el('sec-chart')?.scrollIntoView({behavior:'smooth',block:'center'});
-    return;
-  }
-  if(cat==='기업분석'){
-    if(s._finEmpty){ box.innerHTML=finEmptyHtml(); return; }
-    box.innerHTML=`
-      <div class="az-card" style="margin-bottom:16px"><div class="az-card-head"><h3>연도별 손익 구성</h3></div>
-        <div class="ch-sub" style="margin-bottom:4px">각 연도 매출 100% 중 순이익·영업이익·비용 비중 (단위: 억원)</div>
-        <div class="donut-legend-inline" style="margin:6px 0 12px"><span class="dli"><span class="d" style="background:${COLOR.gold}"></span>순이익</span><span class="dli"><span class="d" style="background:${COLOR.teal}"></span>영업이익(순이익 외)</span><span class="dli"><span class="d" style="background:#D7E0EA"></span>매출원가·비용</span></div>
-        <div class="donut-years" id="income-donuts"></div></div>
-      <div class="az-card"><div class="az-card-head"><h3>성장성 (전년 대비)</h3></div><div class="growth-strip" id="growth-strip" style="display:grid"></div></div>`;
-    renderIncomeDonuts(s); renderGrowthStrip(s);
-    return;
-  }
-  if(cat==='재무분석'){
-    if(s._finEmpty){ box.innerHTML=finEmptyHtml(); return; }
-    box.innerHTML=`<div class="chart-grid">
-      <div class="chart-card"><h3>부채비율 추이</h3><div class="ch-sub">부채총계 / 자본총계 (단위: %)</div><div class="chart-wrap"><canvas id="chart-debt"></canvas></div></div>
-      <div class="chart-card"><h3>영업이익률 · ROE</h3><div class="ch-sub">수익성 지표 (단위: %)</div><div class="chart-wrap"><canvas id="chart-profitability"></canvas></div></div>
-    </div>`;
-    renderDebtChart(s); renderProfitabilityChart(s);
-    return;
-  }
-  if(cat==='밸류에이션'){
-    const per=s.per>0?s.per:null, perAvg=sectorAvg(s.sector,x=>x.per>0?x.per:null);
-    const pbr=pbrOf(s), pbrAvg=sectorAvg(s.sector,x=>pbrOf(x));
-    const nv=s.naver||null;
-    const fwd = nv && nv.cnsPer!=null ? `추정 PER(포워드) ${nv.cnsPer.toFixed(1)}배` : '';
-    const tgt = nv && nv.targetPrice ? `목표주가 컨센서스 ${num(nv.targetPrice)}원` : '';
-    const extra = [fwd, tgt].filter(Boolean).join(' · ');
-    box.innerHTML=`<div class="az-card"><div class="az-card-head"><h3>밸류에이션 — ${h(s.sector)} 업종 대비</h3></div>
-      <div class="chart-wrap" style="height:260px"><canvas id="chart-val"></canvas></div>
-      ${extra?`<div style="font-size:12px;color:var(--text2);margin-top:10px;font-weight:600">📌 ${extra} <span style="color:var(--text3);font-weight:500">(네이버)</span></div>`:''}
-      <div style="font-size:11.5px;color:var(--text3);margin-top:6px">PER·PBR은 낮을수록 저평가. 업종 평균은 ${h(s.sector)} 섹터 상위 종목 평균. EV/EBITDA는 무료 출처 한계로 미제공.</div></div>`;
-    mountChart('chart-val',{type:'bar',
-      data:{labels:['PER (배)','PBR (배)'], datasets:[
-        {label:s.name, data:[per,pbr], backgroundColor:COLOR.navy, borderRadius:5, maxBarThickness:46},
-        {label:`${s.sector} 평균`, data:[perAvg,pbrAvg], backgroundColor:COLOR.gold, borderRadius:5, maxBarThickness:46},
-      ]},
-      options:{responsive:true,maintainAspectRatio:false,animation:{duration:500},
-        plugins:{legend:baseLegend(),tooltip:{...baseTooltip(),callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw!=null?ctx.raw.toFixed(2)+'배':'N/A'}`}}},
-        scales:{x:{grid:{display:false},ticks:{font:{family:FONT,size:12,weight:'700'},color:COLOR.text2}},y:{grid:{color:COLOR.grid},border:{display:false},ticks:{font:{family:FONT,size:10.5},color:COLOR.text3}}}}});
-    return;
-  }
-  if(cat==='투자지표'){
-    if(s._finEmpty){ box.innerHTML=finEmptyHtml(); return; }
-    box.innerHTML=`<div class="az-card"><div class="az-card-head"><h3>투자지표 종합 (0~100 정규화)</h3></div>
-      <div class="chart-wrap" style="height:260px"><canvas id="chart-invscore"></canvas></div>
-      <div style="font-size:11.5px;color:var(--text3);margin-top:8px">수익성(ROE)·마진(영업이익률)·안정성(부채비율, 업종 보정)·성장성(매출 YoY)·밸류에이션(PER) 환산. 종합 ${coreScore(s)}점.</div></div>`;
-    const sc=compScores(s);
-    mountChart('chart-invscore',{type:'bar',
-      data:{labels:COMP_AXES, datasets:[{label:s.name, data:sc, backgroundColor:COMP_AXES.map((_,i)=>['#1E3A5F','#2D7D6F','#3A9E8D','#C8973A','#7C5CDB'][i]), borderRadius:5, maxBarThickness:48}]},
-      options:{responsive:true,maintainAspectRatio:false,animation:{duration:500},
-        plugins:{legend:{display:false},tooltip:{...baseTooltip(),callbacks:{label:ctx=>` ${ctx.raw}점`}}},
-        scales:{x:{grid:{display:false},ticks:{font:{family:FONT,size:11.5,weight:'700'},color:COLOR.text2}},y:{min:0,max:100,grid:{color:COLOR.grid},border:{display:false},ticks:{stepSize:25,font:{family:FONT,size:10.5},color:COLOR.text3,callback:v=>v+'점'}}}}});
-    return;
-  }
-  // 수급분석 / 뉴스공시
-  box.innerHTML=`<div class="az-card"><div class="az-ph" style="height:180px"><div class="ico">🔒</div><div class="t">${cat} — 데이터 미제공</div><div class="d">${cat==='수급분석'?'외국인·기관 수급 데이터는 무료·합법 공개 출처가 없습니다.':'뉴스·공시 연동은 추후 제공 예정입니다.'}</div></div></div>`;
-}
-window.selectCat=selectCat;
 function finEmptyHtml(){ return `<div class="fin-empty"><div class="ico">📄</div>이 종목은 DART 재무제표를 제공하지 않습니다.<br>(우선주·리츠·스팩 등은 별도 재무가 없을 수 있습니다.)</div>`; }
 
 let clockTimer=null;
@@ -1154,11 +1039,6 @@ window.setPriceInterval = setPriceInterval;
 function renderPriceArea(){
   const ctrls = el('price-controls');
   if(ctrls) ctrls.innerHTML = chartCtrlsHtml(true);
-  const sub = el('price-sub');
-  if(curSpark && curSpark.dates && curSpark.dates.length){
-    const ivName = {D:'일봉',W:'주봉',M:'월봉'}[chartState.interval];
-    if(sub) sub.textContent = `${dashD(curSpark.dates[0])} ~ ${dashD(curSpark.dates[curSpark.dates.length-1])} · ${ivName} · ${curSpark.open?'캔들(시가·고가·저가·종가)+거래량':'종가 라인'}`;
-  } else if(sub){ sub.textContent = '가격 이력이 아직 없습니다'; }
   renderCandle('chart-price');
   const mbg = el('chart-modal-bg');
   if(mbg && mbg.classList.contains('show')){
@@ -1228,18 +1108,6 @@ function renderCandle(canvasId){
   const vis = startIdx<0 ? bars : bars.slice(startIdx);
   if(!vis.length) return;
 
-  // 이동평균 — 전체 bars 기준 계산 후 표시 구간만 슬라이스 (가장자리 끊김 방지)
-  const allCloses = bars.map(b=>b.c);
-  const maDefs = chartState.interval==='D' ? [[5,'#C8973A'],[20,'#2D7D6F'],[60,'#7C5CDB'],[120,'#3A9E8D']]
-               : chartState.interval==='W' ? [[4,'#C8973A'],[13,'#2D7D6F'],[26,'#7C5CDB']]
-               : [[3,'#C8973A'],[6,'#2D7D6F'],[12,'#7C5CDB']];
-  const s0 = startIdx<0 ? 0 : startIdx;
-  const maSets = maDefs.map(([n,col])=>({
-    type:'line', label:`MA${n}`, data:calcMA(allCloses,n).slice(s0),
-    borderColor:col, borderWidth:1.5, pointRadius:0, pointHoverRadius:0, fill:false, tension:.25,
-    yAxisID:'y', order:1, spanGaps:true,
-  }));
-
   const labels = vis.map(b=>fmtD(b.d, chartState.interval==='M'));
   const isBig = canvasId==='chart-price-big';
   const lastBar = vis[vis.length-1];
@@ -1256,7 +1124,6 @@ function renderCandle(canvasId){
       // 캔들은 candlePlugin이 직접 그림. 이 보이지 않는 라인은 x카테고리·툴팁·호버 인덱스 제공.
       { type:'line', label:'캔들', data:vis.map(b=>b.c), borderColor:'rgba(0,0,0,0)', backgroundColor:'rgba(0,0,0,0)',
         pointRadius:0, pointHoverRadius:0, fill:false, yAxisID:'y', order:2 },
-      ...maSets,
     ]},
     options:{
       responsive:true, maintainAspectRatio:false, animation:{duration:300,easing:'easeOutQuart'},
@@ -1264,12 +1131,10 @@ function renderCandle(canvasId){
       layout:{padding:{top:6}},
       plugins:{
         candles:{ bars:vis, maxV, big:isBig },
-        legend:{ display:true, align:'start', labels:{
-          font:{family:FONT,size:11,weight:'700'}, color:COLOR.text2, usePointStyle:true, pointStyleWidth:14, boxHeight:5, padding:14,
-          filter: item=>String(item.text).startsWith('MA'),
-        }},
+        legend:{ display:false },
         tooltip:{ ...baseTooltip(), displayColors:false, animation:{duration:80}, position:'nearest', caretSize:5,
-          backgroundColor:'rgba(8,20,36,.96)', borderColor:'rgba(200,151,58,.4)', borderWidth:1, padding:12,
+          backgroundColor:'rgba(255,255,255,.08)', borderColor:'rgba(15,37,64,.14)', borderWidth:1, padding:10,
+          titleColor:COLOR.text, bodyColor:COLOR.text, bodyFont:{family:FONT,size:12,weight:'700'}, titleFont:{family:FONT,weight:'800',size:12},
           filter: item=>item.dataset.label==='캔들',
           callbacks:{
             title: items=>{ if(!items.length) return ''; const b=vis[items[0].dataIndex]; return dashD(b.d) + ({D:'',W:' · 주봉',M:' · 월봉'}[chartState.interval]||''); },
@@ -1414,8 +1279,9 @@ function renderRanking(){
 // 비교
 // ─────────────────────────────────────────────────────────────
 let compareSector = 'ALL';
+let comparePage = 0;
+const COMPARE_PAGE_SIZE = 8;
 function renderCompare(){
-  if(!compareSel.length) compareSel = DATA.marketcap.slice(0,2).map(s=>s.code);
   // 선택된 종목 태그
   el('compare-selected').innerHTML = compareSel.map(c=>{
     const s = getStock(c); if(!s) return '';
@@ -1427,20 +1293,43 @@ function renderCompare(){
   el('compare-sectors').innerHTML =
     `<button class="chip ${compareSector==='ALL'?'on':''}" onclick="setCompareSector('ALL')">전체<small>${STOCKS.length}</small></button>` +
     sectors.map(s=>`<button class="chip ${s===compareSector?'on':''}" onclick="setCompareSector('${encodeURIComponent(s)}')">${h(s)}<small>${counts[s]}</small></button>`).join('');
-  // 섹터별 종목 리스트
+  // 섹터별 종목 목록(페이지형 선택)
   const list = STOCKS.filter(s=>compareSector==='ALL'||(s.sector||'기타')===compareSector)
                      .sort((a,b)=>b.marketCap-a.marketCap);
+  const pages = Math.max(1, Math.ceil(list.length/COMPARE_PAGE_SIZE));
+  comparePage = clampN(comparePage, 0, pages-1);
+  const pageItems = list.slice(comparePage*COMPARE_PAGE_SIZE, (comparePage+1)*COMPARE_PAGE_SIZE);
   const full = compareSel.length>=3;
-  el('compare-list').innerHTML = list.map(s=>{
+  el('compare-list').innerHTML = `
+    <div class="cmp-list-controls">
+      <select class="cmp-select" ${full?'disabled':''} onchange="addCompareFromSelect(this.value); this.value=''">
+        <option value="">${full?'최대 3종목까지 선택됨':'종목 선택'}</option>
+        ${pageItems.filter(s=>!compareSel.includes(s.code)).map(s=>`<option value="${h(s.code)}">${h(s.name)} · ${h(s.code)} · ${h(s.market||'')}</option>`).join('')}
+      </select>
+      <div class="cmp-pager">
+        <button class="cmp-page-btn" ${comparePage<=0?'disabled':''} onclick="setComparePage(${comparePage-1})" title="이전 페이지">‹</button>
+        <span class="cmp-page-state">${comparePage+1} / ${pages}</span>
+        <button class="cmp-page-btn" ${comparePage>=pages-1?'disabled':''} onclick="setComparePage(${comparePage+1})" title="다음 페이지">›</button>
+      </div>
+      <div class="cmp-page-list">
+        ${pageItems.map(s=>{
     const on = compareSel.includes(s.code);
     const dis = full && !on;
-    return `<button class="cmp-opt ${on?'on':''} ${dis?'dis':''}" ${dis?'':`onclick="toggleCompare('${s.code}')"`}>
-      <span class="nm">${h(s.name)}</span><span class="ck">${on?'✓':'+'}</span></button>`;
-  }).join('');
+    return `<div class="cmp-page-row ${on?'on':''} ${dis?'dis':''}" ${dis?'':`onclick="toggleCompare('${s.code}')"`}>
+      <div><div class="cmp-row-name">${h(s.name)}</div><div class="cmp-row-meta">${h(s.code)} · ${h(s.market||'')} · ${h(s.sector||'')}</div></div>
+      <span class="cmp-row-state">${on?'선택됨':'선택'}</span>
+    </div>`;
+  }).join('')}
+      </div>
+    </div>`;
   renderCompareBody();
 }
-function setCompareSector(s){ compareSector = decodeURIComponent(s); renderCompare(); }
+function setCompareSector(s){ compareSector = decodeURIComponent(s); comparePage = 0; renderCompare(); }
 window.setCompareSector = setCompareSector;
+function setComparePage(p){ comparePage = p; renderCompare(); }
+window.setComparePage = setComparePage;
+function addCompareFromSelect(code){ if(code) toggleCompare(code); }
+window.addCompareFromSelect = addCompareFromSelect;
 function toggleCompare(code){
   const i = compareSel.indexOf(code);
   if(i>=0) compareSel.splice(i,1);

@@ -40,7 +40,7 @@ img{display:block}
 #main-nav{background:rgba(255,255,255,.95);backdrop-filter:saturate(140%) blur(14px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
 .nav-inner{max-width:1360px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;gap:6px}
 .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;letter-spacing:-.02em;flex-shrink:0;margin-right:10px}
-.brand-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--navy),var(--teal));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;box-shadow:0 3px 10px rgba(30,58,95,.25)}
+.brand-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#0F2540,var(--gold));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;box-shadow:0 3px 10px rgba(30,58,95,.25);cursor:pointer}
 .nav-tabs{display:flex;gap:1px;flex:1}
 .nav-tab{padding:7px 13px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text2);transition:all .15s;white-space:nowrap}
 .nav-tab:hover{background:var(--bg2);color:var(--text)}
@@ -354,13 +354,24 @@ img{display:block}
 .cmp-tag .x{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.22);font-size:11px;display:flex;align-items:center;justify-content:center;transition:background .12s}
 .cmp-tag .x:hover{background:rgba(255,255,255,.4)}
 .cmp-picker{border-top:1px solid var(--border-soft);padding-top:12px}
-.cmp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;margin-top:11px;max-height:230px;overflow-y:auto;padding-right:4px}
-.cmp-opt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--panel);cursor:pointer;transition:all .13s;text-align:left}
-.cmp-opt:hover{border-color:var(--navy);background:var(--bg2)}
-.cmp-opt.on{border-color:var(--navy);background:var(--primary-light,#EEF3FB);box-shadow:inset 0 0 0 1px var(--navy)}
-.cmp-opt.dis{opacity:.4;cursor:not-allowed}
-.cmp-opt .nm{font-size:12.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cmp-opt .ck{font-size:12px;color:var(--navy);font-weight:800}
+.cmp-list-controls{display:flex;align-items:center;gap:10px;margin-top:11px;flex-wrap:wrap}
+.cmp-select{flex:1;min-width:260px;height:40px;padding:0 38px 0 13px;border:1.5px solid var(--border);border-radius:9px;background:#fff;color:var(--text);font:700 13px/1.2 'Pretendard',sans-serif;cursor:pointer}
+.cmp-select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.08)}
+.cmp-select:disabled{background:var(--bg);color:var(--text3);cursor:not-allowed}
+.cmp-pager{display:flex;align-items:center;gap:8px;margin-left:auto}
+.cmp-page-btn{width:34px;height:34px;border:1.5px solid var(--border);border-radius:9px;background:#fff;color:var(--text2);font-size:17px;font-weight:900;transition:all .12s}
+.cmp-page-btn:hover:not(:disabled){border-color:var(--navy);color:var(--navy)}
+.cmp-page-btn:disabled{opacity:.38;cursor:not-allowed}
+.cmp-page-state{font-size:12px;font-weight:800;color:var(--text3);min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+.cmp-page-list{width:100%;display:flex;flex-direction:column;border:1px solid var(--border-soft);border-radius:10px;overflow:hidden;background:#fff}
+.cmp-page-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .12s}
+.cmp-page-row:last-child{border-bottom:none}
+.cmp-page-row:hover{background:var(--bg)}
+.cmp-page-row.on{background:#EEF3FB}
+.cmp-page-row.dis{opacity:.45;cursor:not-allowed}
+.cmp-row-name{font-size:13px;font-weight:800;color:var(--text)}
+.cmp-row-meta{font-size:11px;font-weight:600;color:var(--text3);margin-top:1px}
+.cmp-row-state{font-size:12px;font-weight:900;color:var(--navy)}
 
 /* ── 비교 막대그래프 + 우위 표시 ── */
 .compare-viz{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
@@ -407,14 +418,14 @@ img{display:block}
 .azh-m .v{font-size:17px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
 .azh-m .s{font-size:10.5px;color:rgba(255,255,255,.5);margin-top:3px;white-space:nowrap}
 .azh-m .s.up{color:#FF8A8A}.azh-m .s.dn{color:#9CC0FF}
-.azh-52{margin-top:7px}
-.azh-52-track{height:5px;border-radius:99px;background:linear-gradient(90deg,#4A7DF0,rgba(255,255,255,.25) 50%,#F05A5A);position:relative}
-.azh-52-mk{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;background:#fff;border:2.5px solid var(--gold);box-shadow:0 1px 4px rgba(0,0,0,.4)}
-
 /* 분석 행 그리드 */
+.az-price-row{margin-bottom:16px}
+.az-price-row .chart-wrap{height:320px}
+.az-info-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;margin-bottom:16px;align-items:stretch}
+.az-info-grid .az-card{min-width:0}
 .az-row3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px;margin-bottom:16px}
 .az-row3.even{grid-template-columns:repeat(3,1fr)}
-@media(max-width:1080px){.az-row3,.az-row3.even{grid-template-columns:1fr}}
+@media(max-width:1080px){.az-row3,.az-row3.even,.az-info-grid{grid-template-columns:1fr}.az-price-row .chart-wrap{height:280px}}
 .az-card{background:var(--panel);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);transition:box-shadow .2s}
 .az-card:hover{box-shadow:0 8px 28px rgba(15,37,64,.09)}
 .az-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
@@ -428,21 +439,19 @@ img{display:block}
 .az-ph .t{font-size:13px;font-weight:700;color:var(--text2)}
 .az-ph .d{font-size:11.5px;line-height:1.5}
 
-/* 52주 가격 범위 (주가차트 하단) */
-.az-range{margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft)}
-.az-range-bar{height:8px;border-radius:99px;background:linear-gradient(90deg,#DCE6F2,#E9D4A6);position:relative;margin:18px 0 6px}
-.az-range-mk{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:var(--gain);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)}
-.az-range-cur{position:absolute;bottom:calc(100% + 4px);transform:translateX(-50%);font-size:11px;font-weight:800;color:var(--text);white-space:nowrap}
-.az-range-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--text3)}
-.az-range-ends b{color:var(--text2);font-variant-numeric:tabular-nums}
-
-/* 수익률 사이드 수치 */
-.az-ret-wrap{display:flex;gap:14px;align-items:stretch}
-.az-ret-chart{flex:1;min-width:0;height:210px;position:relative}
-.az-ret-legend{display:flex;flex-direction:column;justify-content:center;gap:14px;flex-shrink:0;min-width:78px}
-.az-ret-item .nm{font-size:11.5px;color:var(--text2);font-weight:700;display:flex;align-items:center;gap:5px}
-.az-ret-item .nm .d{width:9px;height:3px;border-radius:2px}
-.az-ret-item .vv{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+/* 수익률 단순 그래프 */
+.az-ret-simple{margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft)}
+.az-ret-simple-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.az-ret-title{font-size:12px;font-weight:800;color:var(--text2)}
+.az-ret-bars{display:flex;flex-direction:column;gap:9px}
+.az-ret-bar{display:grid;grid-template-columns:82px 1fr 54px;gap:9px;align-items:center}
+.az-ret-bar .nm{font-size:11.5px;font-weight:800;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.az-ret-track{height:8px;border-radius:99px;background:var(--bg2);position:relative;overflow:hidden}
+.az-ret-fill{position:absolute;top:0;bottom:0;border-radius:99px;min-width:2px}
+.az-ret-fill.pos{left:50%;background:var(--gain)}
+.az-ret-fill.neg{right:50%;background:var(--loss)}
+.az-ret-zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(15,37,64,.18)}
+.az-ret-bar .vv{text-align:right;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums}
 
 /* 정보 카드 키-밸류 */
 .az-kv{display:grid;grid-template-columns:1fr 1fr;gap:13px 18px}
@@ -463,17 +472,6 @@ img{display:block}
 .az-gauge-side .r:last-child{border-bottom:none;padding-bottom:0}
 .az-gauge-side .r .k{color:var(--text3);font-weight:600}
 .az-gauge-side .r .v{font-weight:800;font-variant-numeric:tabular-nums}
-
-/* 카테고리 7-nav 스트립 */
-.az-catnav{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:16px}
-@media(max-width:1080px){.az-catnav{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:620px){.az-catnav{grid-template-columns:repeat(2,1fr)}}
-.az-cat{background:var(--panel);border:1.5px solid var(--border);border-radius:12px;padding:13px;cursor:pointer;transition:all .16s;text-align:left;box-shadow:var(--shadow-sm)}
-.az-cat:hover{border-color:var(--navy);transform:translateY(-2px);box-shadow:var(--shadow-md)}
-.az-cat.on{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
-.az-cat .ic{font-size:18px;margin-bottom:7px}
-.az-cat .t{font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px}
-.az-cat .d{font-size:10.5px;color:var(--text3);line-height:1.45}
 
 /* 글로벌 지수 스트립 (구글파이낸스) */
 .global-strip{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
@@ -533,8 +531,8 @@ img{display:block}
 <nav id="main-nav">
   <div class="nav-inner">
     <div class="brand">
-      <div class="brand-mark">재</div>
-      <span>종목 라운지</span>
+      <div class="brand-mark" title="대시보드로 이동" onclick="switchTab('dashboard')">CL</div>
+      <span>Cookie Lab</span>
     </div>
     <div class="nav-tabs" id="nav-tabs">
       <button class="nav-tab active" data-tab="dashboard">대시보드</button>
