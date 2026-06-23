@@ -264,6 +264,22 @@ async function ensureNaver(code){
   if(API_OK){ try{ const n=await api('naver',{code}); if(n && n.ok) s.naver=n; }catch(e){} }
   return s.naver||null;
 }
+async function ensureQuote(code){
+  const s = getStock(code); if(!s || !API_OK) return s;
+  try{
+    const r = await api('quotes', { codes: code });
+    const q = r && r.list && r.list[0];
+    if(q && q.price > 0){
+      s.price = q.price;
+      s.change = q.rate ?? s.change;
+      s.volume = q.vol ?? s.volume;
+      s.amount = q.amount || s.amount;
+      s.marketCap = q.cap || s.marketCap;
+      if(q.marketDataAt) DATA.marketDataAt = q.marketDataAt;
+    }
+  }catch(e){}
+  return s;
+}
 // 업종 평균 계산용: 같은 섹터 종목 재무 선로딩
 async function ensureSectorFin(sector){
   const peers = STOCKS.filter(x=>(x.sector||'기타')===sector && !x._finLoaded).slice(0,12);
@@ -745,9 +761,15 @@ async function renderAnalysisBody(){
   renderAnalysisExtras(s, null);
   startClock();
 
+  ensureQuote(s.code).then(()=>{
+    if(s.code !== selectedCode) return;
+    renderLiveQuote(s);
+  });
+
   ensureSpark(s.code).then(sp=>{
     if(s.code !== selectedCode) return;
     curSpark = sp;
+    applyQuoteToSpark(s, curSpark);
     renderAzOHLC(s, sp);
     renderAzMetrics(s, sp);
     renderPriceArea();
@@ -809,6 +831,29 @@ function renderAzOHLC(s, sp){
     <div class="r"><span class="k">거래대금</span><span class="v">${fmtCap(Math.round((s.amount||0)/1e8))}</span></div>`;
   // 등락 금액 보강
   if(prev!=null){ const diff=s.price-prev; const c=el('azh-chg'); if(c) c.innerHTML=`${arrow(s.change)} ${num(Math.abs(diff))} ${pct(s.change)}`; }
+}
+
+function applyQuoteToSpark(s, sp){
+  if(!s || !sp || !sp.close || !sp.close.length || !s.price) return;
+  const i = sp.close.length - 1;
+  sp.close[i] = s.price;
+  if(sp.series && sp.series.length) sp.series[sp.series.length - 1] = s.price;
+  if(sp.high && sp.high.length) sp.high[i] = Math.max(sp.high[i] || s.price, s.price);
+  if(sp.low && sp.low.length) sp.low[i] = Math.min(sp.low[i] || s.price, s.price);
+  if(sp.vol && sp.vol.length && s.volume) sp.vol[i] = s.volume;
+}
+
+function renderLiveQuote(s){
+  const p=el('azh-pday'); if(p) p.textContent = `현재가 · ${DATA.basisDate||''} 기준`;
+  const priceEl=document.querySelector('.azh-price'); if(priceEl) priceEl.innerHTML=`${num(s.price)}<small>원</small>`;
+  const chg=el('azh-chg'); if(chg){ chg.className=`azh-chg ${cls(s.change)}`; chg.innerHTML=`${arrow(s.change)} ${pct(s.change)}`; }
+  if(curSpark) applyQuoteToSpark(s, curSpark);
+  renderAzOHLC(s, curSpark);
+  renderAzMetrics(s, curSpark);
+  renderTradeTrend(s, curSpark);
+  renderDividend(s);
+  renderDataFreshness();
+  if(curSpark) renderPriceArea();
 }
 
 function pbrOfBest(s){ return (s.naver && s.naver.pbr!=null) ? s.naver.pbr : pbrOf(s); }
@@ -1176,6 +1221,8 @@ window.setPricePeriod = setPricePeriod;
 window.setPriceInterval = setPriceInterval;
 
 function renderPriceArea(){
+  const s = getStock(selectedCode);
+  if(s && curSpark) applyQuoteToSpark(s, curSpark);
   const ctrls = el('price-controls');
   if(ctrls) ctrls.innerHTML = chartCtrlsHtml(true);
   renderCandle('chart-price');
