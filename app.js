@@ -38,6 +38,16 @@ function fmtD(d, monthly){ return monthly ? `${d.slice(2,4)}.${d.slice(4,6)}` : 
 function dashD(d){ return `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`; }
 const clampN = (v,a,b)=>Math.max(a,Math.min(b,v));
 const PALETTE = ['#1E3A5F','#2D7D6F','#C8973A','#7C5CDB','#E23B3B','#2563EB','#0E9CC0','#D9679C','#5B8C5A','#64748B'];
+function fmtKstDateTime(v){
+  if(!v) return '';
+  const d = new Date(v);
+  if(Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('ko-KR', {
+    timeZone:'Asia/Seoul',
+    year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', hour12:false,
+  }).replace(/\.\s?/g,'. ').trim();
+}
 
 // 단순이동평균 (앞쪽은 null)
 function calcMA(values, n){
@@ -178,28 +188,34 @@ function normSeed(s){
 }
 
 let STOCKS = [];
-const DATA = { volume:[], marketcap:[], overview:null, basisDate:null };
+const DATA = { amount:[], volume:[], marketcap:[], overview:null, basisDate:null, updatedAt:null, marketDataAt:null };
 const sparkCache = {};
 
 function getStock(code){ return STOCKS.find(s=>s.code===code) || null; }
 
 async function loadData(){
   try{
-    const [ov, cap, vol] = await Promise.all([ api('overview'), api('marketcap'), api('volume') ]);
-    if(!(cap.list&&cap.list.length) && !(vol.list&&vol.list.length)) throw new Error('빈 응답');
+    const [ov, cap, vol, amt] = await Promise.all([ api('overview'), api('marketcap'), api('volume'), api('amount') ]);
+    if(!(cap.list&&cap.list.length) && !(vol.list&&vol.list.length) && !(amt.list&&amt.list.length)) throw new Error('빈 응답');
     DATA.overview  = ov && ov.ok ? ov : null;
-    DATA.basisDate = (cap.basisDate || vol.basisDate || (ov&&ov.basisDate)) || null;
+    DATA.basisDate = (amt.basisDate || cap.basisDate || vol.basisDate || (ov&&ov.basisDate)) || null;
+    DATA.updatedAt = (amt.updatedAt || cap.updatedAt || vol.updatedAt || null);
+    DATA.marketDataAt = (amt.marketDataAt || cap.marketDataAt || vol.marketDataAt || null);
+    DATA.amount    = (amt.list||[]).map(normListItem);
     DATA.marketcap = (cap.list||[]).map(normListItem);
     DATA.volume    = (vol.list||[]).map(normListItem);
-    const m={}; [...DATA.marketcap, ...DATA.volume].forEach(s=>{ if(!m[s.code]) m[s.code]=s; });
+    const m={}; [...DATA.amount, ...DATA.marketcap, ...DATA.volume].forEach(s=>{ if(!m[s.code]) m[s.code]=s; });
     STOCKS = Object.values(m);
     API_OK = true;
   }catch(e){
     API_OK = false;
     STOCKS = (window.STOCKS_SEED||[]).map(normSeed);
+    DATA.amount    = [...STOCKS].sort((a,b)=>(b.amount||0)-(a.amount||0));
     DATA.marketcap = [...STOCKS].sort((a,b)=>b.marketCap-a.marketCap);
     DATA.volume    = [...STOCKS].sort((a,b)=>b.volume-a.volume);
     DATA.overview  = null;
+    DATA.updatedAt = null;
+    DATA.marketDataAt = null;
   }
 }
 
@@ -366,6 +382,13 @@ function renderCurrentTab(){
     case 'compare':   renderCompare();   break;
     case 'watchlist': renderWatchlist(); break;
   }
+  renderDataFreshness();
+}
+
+function renderDataFreshness(){
+  const box = el('data-freshness'); if(!box) return;
+  const t = DATA.marketDataAt || DATA.updatedAt;
+  box.textContent = API_OK && t ? `마지막 갱신 ${fmtKstDateTime(t)}` : '';
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -373,7 +396,7 @@ function renderCurrentTab(){
 // ─────────────────────────────────────────────────────────────
 function renderDashboard(){
   const badge = el('hero-badge');
-  if(badge) badge.innerHTML = `<span class="hero-badge-dot"></span>${ API_OK ? (DATA.basisDate? h(DATA.basisDate)+' 종가 기준' : '공공데이터·DART 기준') : '오프라인 시드 데이터' }`;
+  if(badge) badge.innerHTML = `<span class="hero-badge-dot"></span>${ API_OK ? (DATA.basisDate? h(DATA.basisDate)+' 기준' : '데이터 기준 확인 중') : '오프라인 시드 데이터' }`;
 
   const ov = DATA.overview;
   if(ov && ov.breadth){
@@ -434,7 +457,8 @@ function renderGlobalStrip(){
 }
 
 function topAmountList(){
-  return [...STOCKS].filter(s=>(s.amount||0)>0).sort((a,b)=>(b.amount||0)-(a.amount||0));
+  const base = DATA.amount && DATA.amount.length ? DATA.amount : STOCKS;
+  return [...base].filter(s=>(s.amount||0)>0).sort((a,b)=>(b.amount||0)-(a.amount||0));
 }
 function defaultAnalysisCode(){
   return topAmountList()[0]?.code || DATA.marketcap[0]?.code || STOCKS[0]?.code || null;
@@ -662,7 +686,7 @@ async function renderAnalysisBody(){
       </div>
       <div class="azh-grid">
         <div class="azh-pricewrap">
-          <div class="azh-pday" id="azh-pday">현재가 · ${h(DATA.basisDate||'')} 종가</div>
+          <div class="azh-pday" id="azh-pday">현재가 · ${h(DATA.basisDate||'')} 기준</div>
           <div class="azh-price">${num(s.price)}<small>원</small></div>
           <div class="azh-chg ${cls(s.change)}" id="azh-chg">${arrow(s.change)} ${pct(s.change)}</div>
           <button class="azh-watch ${w?'on':''}" id="azh-watch">${w?'★ 관심종목':'☆ 관심종목'}</button>
@@ -704,7 +728,7 @@ async function renderAnalysisBody(){
 
     <div class="az-footer">
       <span class="fl">📅 데이터 기준</span>
-      <span class="ev">시세 기준일 <b>${h(DATA.basisDate||'-')}</b> 종가</span>
+      <span class="ev">시세 기준일 <b>${h(DATA.basisDate||'-')}</b></span>
       <span class="ev" id="az-fy"></span>
       <span class="right"><span>데이터는 지연될 수 있습니다</span><span id="az-clock"></span></span>
     </div>`;

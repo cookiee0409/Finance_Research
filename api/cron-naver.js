@@ -2,7 +2,8 @@
  * api/cron-naver.js  →  /api/cron-naver
  * 네이버 금융(비공식 모바일 API)으로 한국 종목 상세를 받아 KV에 적재한다.
  *   fr_naver_<code> { foreignRate, per, eps, pbr, bps, cnsPer, cnsEps, divYield, dps,
- *                     hi52, lo52, targetPrice, opinion, supply:[{date,foreign,organ,individual,foreignRate,close}], updatedAt }
+ *                     hi52, lo52, listedShares, floatingShares, floatRate,
+ *                     targetPrice, opinion, supply:[{date,foreign,organ,individual,foreignRate,close}], updatedAt }
  *
  * 출처: m.stock.naver.com/api/stock/{code}/integration  (밸류·외국인·컨센서스)
  *       m.stock.naver.com/api/stock/{code}/trend         (10일 외국인·기관·개인 순매수)
@@ -18,6 +19,58 @@ const NAVER_HDR = {
 const CHUNK_BUDGET_MS = 50000;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const numOf = (s) => { if (s == null) return null; const n = Number(String(s).replace(/[,%원배\s]/g, '')); return Number.isFinite(n) ? n : null; };
+const normKey = (s) => String(s ?? '').toLowerCase().replace(/[\s_·./()-]/g, '');
+
+function valueByCodeOrLabel(items, codes = [], labels = []) {
+  const codeSet = new Set(codes.map(normKey));
+  const labelSet = labels.map(normKey);
+  for (const x of items || []) {
+    const keys = [x?.code, x?.key, x?.name, x?.title, x?.label].map(normKey);
+    const hitCode = keys.some(k => codeSet.has(k));
+    const hitLabel = keys.some(k => labelSet.some(l => k.includes(l)));
+    if (hitCode || hitLabel) return numOf(x?.value ?? x?.data ?? x?.text ?? x?.contents);
+  }
+  return null;
+}
+
+function deepValueByKeys(obj, keys = []) {
+  const want = new Set(keys.map(normKey));
+  const seen = new Set();
+  const walk = (v) => {
+    if (!v || typeof v !== 'object' || seen.has(v)) return null;
+    seen.add(v);
+    for (const [k, val] of Object.entries(v)) {
+      if (want.has(normKey(k))) {
+        const n = numOf(val);
+        if (n != null) return n;
+      }
+      if (val && typeof val === 'object') {
+        const n = walk(val);
+        if (n != null) return n;
+      }
+    }
+    return null;
+  };
+  return walk(obj);
+}
+
+function extractFloatInfo(ig, ti) {
+  const infos = ig?.totalInfos || [];
+  const listedShares =
+    valueByCodeOrLabel(infos, ['listedShareCount','listedShares','listedStockCount','totalListedShares'], ['상장주식수','상장주식']) ??
+    deepValueByKeys(ig, ['listedShareCount','listedShares','listedStockCount','totalListedShares']);
+  const floatingShares =
+    valueByCodeOrLabel(infos, ['floatingShareCount','floatingShares','floatingStockCount','freeFloatShares'], ['유동주식수','유통주식수','유동주식','유통주식']) ??
+    deepValueByKeys(ig, ['floatingShareCount','floatingShares','floatingStockCount','freeFloatShares']);
+  let floatRate =
+    numOf(ti.floatingStockRatio ?? ti.floatRate ?? ti.freeFloatRate) ??
+    valueByCodeOrLabel(infos, ['floatingStockRatio','floatRate','freeFloatRate'], ['유동주식비율','유통주식비율','유동비율','유통비율']) ??
+    deepValueByKeys(ig, ['floatingStockRatio','floatRate','freeFloatRate']);
+  if (floatRate == null && listedShares > 0 && floatingShares > 0) {
+    floatRate = +(floatingShares / listedShares * 100).toFixed(2);
+  }
+  return { listedShares, floatingShares, floatRate };
+}
 
 async function jget(url, retries = 1) {
   for (let i = 0; i <= retries; i++) {
@@ -35,6 +88,7 @@ async function buildNaver(code) {
 
   const ti = {};
   (ig?.totalInfos || []).forEach(x => { if (x && x.code) ti[x.code] = x.value; });
+  const floatInfo = extractFloatInfo(ig, ti);
 
   const supply = Array.isArray(tr)
     ? tr.slice().reverse().map(d => ({                 // 과거→현재 정렬
@@ -63,6 +117,9 @@ async function buildNaver(code) {
     cnsPer: numOf(ti.cnsPer), cnsEps: numOf(ti.cnsEps),
     divYield: numOf(ti.dividendYieldRatio), dps: numOf(ti.dividend),
     hi52: numOf(ti.highPriceOf52Weeks), lo52: numOf(ti.lowPriceOf52Weeks),
+    listedShares: floatInfo.listedShares,
+    floatingShares: floatInfo.floatingShares,
+    floatRate: floatInfo.floatRate,
     targetPrice, opinion,
     supply,
     updatedAt: new Date().toISOString(),

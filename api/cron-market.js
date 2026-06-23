@@ -1,7 +1,8 @@
 /**
- * api/cron-market.js  →  /api/cron-market   [schedule: 30 5 * * * (=14:30 KST)]
+ * api/cron-market.js  →  /api/cron-market
+ * vercel.json 기준 하루 1회 실행: 20:00 KST.
  *
- * 공공데이터포털(금융위, KOGL 출처표시) 전일 전체시세를 받아 대시보드/리스트용으로
+ * 공공데이터포털(금융위, KOGL 출처표시) 최근 기준일 전체시세를 받아 대시보드/리스트용으로
  * 미리 계산해 KV에 저장한다.
  *
  *   fr_marketcap        시가총액 상위 (TOP_CAP)

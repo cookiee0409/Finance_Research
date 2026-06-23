@@ -1,9 +1,10 @@
 /**
  * api/stocks.js  →  /api/stocks   (KV 선계산값 서빙 · 외부 API 직접호출 없음)
  *
- *   ?type=overview                코스피·코스닥 지수 + 환율 (전일)
- *   ?type=marketcap               시가총액 상위 (전일)
- *   ?type=volume                  거래량 상위 (전일)
+ *   ?type=overview                코스피·코스닥 지수 + 환율 (최근 기준일)
+ *   ?type=amount                  거래대금 상위 (최근 갱신)
+ *   ?type=marketcap               시가총액 상위 (최근 갱신)
+ *   ?type=volume                  거래량 상위 (최근 갱신)
  *   ?type=movers&dir=up|down      등락률 상·하위
  *   ?type=quotes&codes=005930,..  지정 종목 전일 종가
  *   ?type=spark&code=005930       종목 30일 가격 스파크라인
@@ -11,7 +12,7 @@
  *   ?type=list                    유니버스(시총·거래량 상위 합집합) 요약
  *   ?type=search&q=삼성           종목 검색(코드·이름)
  *
- * 모든 데이터는 cron-market.js / cron-fin.js 가 KV에 미리 적재한 값.
+ * 모든 데이터는 cron-*.js 가 KV에 미리 적재한 값.
  */
 import { kvGet, corsJson } from './_lib.js';
 
@@ -29,8 +30,8 @@ export default async function handler(req, res) {
       return res.status(200).json(d || { ok: false, error: NOT_READY });
     }
 
-    if (type === 'marketcap' || type === 'volume') {
-      const d = await kvGet('fr_' + type);
+    if (type === 'amount' || type === 'marketcap' || type === 'volume') {
+      const d = (await kvGet('fr_naver_' + type)) || (type === 'amount' ? null : await kvGet('fr_' + type));
       res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=300');
       return res.status(200).json(d || { ok: false, list: [], error: NOT_READY });
     }
@@ -45,10 +46,14 @@ export default async function handler(req, res) {
     if (type === 'quotes') {
       const codes = (req.query.codes || '').toString().split(',').map(s => s.trim()).filter(Boolean);
       if (!codes.length) return res.status(200).json({ ok: false, error: 'codes 파라미터 필요' });
+      const rankList = (await kvGet('fr_naver_rank_list'))?.list || [];
+      const rankMap = Object.fromEntries(rankList.map(x => [x.code, x]));
       const daymap = (await kvGet('fr_daymap')) || {};
       const list = codes.map(code => {
+        const n = rankMap[code];
         const m = daymap[code];
-        return m ? { code, name: m.n, price: m.p, rate: m.r, vol: m.v || 0, cap: m.cap || 0, market: m.mkt || '' }
+        return n ? { code, name: n.name, price: n.price, rate: n.rate, vol: n.vol || 0, cap: n.cap || 0, market: n.market || '' }
+                 : m ? { code, name: m.n, price: m.p, rate: m.r, vol: m.v || 0, cap: m.cap || 0, market: m.mkt || '' }
                  : { code, name: code, price: 0, rate: 0, error: true };
       });
       res.setHeader('Cache-Control', 's-maxage=300');
@@ -76,7 +81,7 @@ export default async function handler(req, res) {
       if (!code) return res.status(200).json({ ok: false, error: 'code 파라미터 필요' });
       const d = await kvGet('fr_naver_' + code);
       res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=600');
-      return res.status(200).json(d || { ok: false, code, error: '네이버 데이터 준비 중' });
+      return res.status(200).json(d || { ok: false, code, error: '상세 데이터 준비 중' });
     }
 
     if (type === 'global') {
@@ -86,7 +91,7 @@ export default async function handler(req, res) {
     }
 
     if (type === 'list') {
-      const d = await kvGet('fr_list');
+      const d = (await kvGet('fr_naver_rank_list')) || (await kvGet('fr_list'));
       res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=300');
       return res.status(200).json(d || { ok: false, list: [], error: NOT_READY });
     }
