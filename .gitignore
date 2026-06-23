@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+.env*.local
+.vercel
+.claude/corpcode/
+.claude/corpcode.zip
+# 로컬 헬퍼(키 포함) — 커밋 금지
+.claude/populate.mjs
+.claude/static-server.js
+.claude/settings.local.json
+.claude/api-probe.js
+.claude/verify-api.mjs
+.DS_Store

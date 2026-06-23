@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/API.txt)",
+      "Read(**/*.env)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(**/*.pfx)",
+      "Read(**/*.p12)",
+      "Read(**/id_rsa*)",
+      "Read(**/*secret*)",
+      "Read(**/*credential*)",
+      "Read(**/*token*)",
+      "Grep(**/API.txt)",
+      "Grep(**/*.env)",
+      "Grep(**/*secret*)",
+      "Grep(**/*credential*)"
+    ],
+    "ask": [
+      "Read(**/Desktop/Code/*)",
+      "Read(**/Desktop/Code/agents/**)",
+      "Read(**/Desktop/Code/alarm/**)",
+      "Read(**/Desktop/Code/Auto Trade/**)",
+      "Read(**/Desktop/Code/Book/**)",
+      "Read(**/Desktop/Code/finance-terminal/**)",
+      "Read(**/Desktop/Code/IPO/**)",
+      "Read(**/Desktop/Code/나머지 정리본/**)",
+      "Read(**/Desktop/Code/쇼핑몰 홈페이지/**)",
+      "Glob(**/Desktop/Code/*)",
+      "Grep(**/Desktop/Code/agents/**)",
+      "Grep(**/Desktop/Code/IPO/**)"
+    ]
+  }
+}
