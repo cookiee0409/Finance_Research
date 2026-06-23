@@ -39,7 +39,8 @@ img{display:block}
 /* ── NAV ── */
 #main-nav{background:rgba(255,255,255,.95);backdrop-filter:saturate(140%) blur(14px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
 .nav-inner{max-width:1360px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;gap:6px}
-.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;letter-spacing:-.02em;flex-shrink:0;margin-right:10px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;letter-spacing:-.02em;flex-shrink:0;margin-right:10px;cursor:pointer}
+.brand span{cursor:pointer}
 .brand-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#0F2540,var(--gold));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;box-shadow:0 3px 10px rgba(30,58,95,.25);cursor:pointer}
 .nav-tabs{display:flex;gap:1px;flex:1}
 .nav-tab{padding:7px 13px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text2);transition:all .15s;white-space:nowrap}
@@ -183,7 +184,7 @@ img{display:block}
 .muted{color:var(--text3)}
 
 /* ── 종목 분석 (deep-dive) ── */
-.analysis-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.analysis-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .analysis-bar label{font-size:12.5px;font-weight:700;color:var(--text2)}
 .stock-select{padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;color:var(--text);background:#fff;font-family:inherit;min-width:240px;cursor:pointer;transition:border-color .15s}
 .stock-select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.08)}
@@ -288,7 +289,7 @@ img{display:block}
 .picker input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.08)}
 .picker-pop{position:absolute;top:calc(100% + 7px);left:0;width:340px;max-width:86vw;background:var(--panel);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 16px 44px rgba(15,37,64,.2);padding:6px;z-index:150;display:none;max-height:55vh;overflow-y:auto}
 .picker-pop.show{display:block}
-.quick-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px 0 16px}
+.quick-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0;flex:1;min-width:260px}
 .quick-chips .ql{font-size:11.5px;font-weight:700;color:var(--text3);margin-right:2px}
 .qchip{padding:7px 13px;font-size:12.5px;font-weight:700;border-radius:999px;background:var(--panel);border:1.5px solid var(--border);color:var(--text2);cursor:pointer;transition:all .13s;box-shadow:var(--shadow-sm)}
 .qchip:hover{border-color:var(--navy);color:var(--navy)}
@@ -347,7 +348,9 @@ img{display:block}
 .gs-box .v small{font-size:11px;font-weight:600;color:var(--text3);margin-left:4px}
 
 /* ── 비교 선택 UI (섹터 분류형) ── */
-.cmp-selbar{background:var(--panel);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.compare-top{display:grid;grid-template-columns:minmax(360px,.95fr) minmax(320px,1.05fr);gap:16px;margin-bottom:16px;align-items:stretch}
+@media(max-width:980px){.compare-top{grid-template-columns:1fr}}
+.cmp-selbar{background:var(--panel);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow-sm);min-width:0}
 .cmp-selected{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;min-height:38px;align-items:center}
 .cmp-selected:empty::before{content:'아래에서 비교할 종목을 최대 3개까지 선택하세요';font-size:12.5px;color:var(--text3)}
 .cmp-tag{display:inline-flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--navy),var(--teal));box-shadow:var(--shadow-sm)}
@@ -363,7 +366,7 @@ img{display:block}
 .cmp-page-btn:hover:not(:disabled){border-color:var(--navy);color:var(--navy)}
 .cmp-page-btn:disabled{opacity:.38;cursor:not-allowed}
 .cmp-page-state{font-size:12px;font-weight:800;color:var(--text3);min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
-.cmp-page-list{width:100%;display:flex;flex-direction:column;border:1px solid var(--border-soft);border-radius:10px;overflow:hidden;background:#fff}
+.cmp-page-list{width:100%;display:flex;flex-direction:column;border:1px solid var(--border-soft);border-radius:10px;overflow:hidden;background:#fff;max-height:292px}
 .cmp-page-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .12s}
 .cmp-page-row:last-child{border-bottom:none}
 .cmp-page-row:hover{background:var(--bg)}
@@ -374,8 +377,8 @@ img{display:block}
 .cmp-row-state{font-size:12px;font-weight:900;color:var(--navy)}
 
 /* ── 비교 막대그래프 + 우위 표시 ── */
-.compare-viz{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
-@media(max-width:880px){.compare-viz{grid-template-columns:1fr}}
+.compare-viz{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:18px}
+.compare-cap-card .chart-wrap{height:280px}
 .adj-note{font-size:11.5px;color:var(--text3);margin-top:10px;padding:9px 12px;background:var(--bg);border-radius:8px;border-left:3px solid var(--gold);line-height:1.5}
 
 /* ══ 종목분석 풀 대시보드 (az-*) ══ */
@@ -419,13 +422,15 @@ img{display:block}
 .azh-m .s{font-size:10.5px;color:rgba(255,255,255,.5);margin-top:3px;white-space:nowrap}
 .azh-m .s.up{color:#FF8A8A}.azh-m .s.dn{color:#9CC0FF}
 /* 분석 행 그리드 */
-.az-price-row{margin-bottom:16px}
-.az-price-row .chart-wrap{height:320px}
-.az-info-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;margin-bottom:16px;align-items:stretch}
-.az-info-grid .az-card{min-width:0}
+.az-main-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(360px,.95fr);gap:16px;margin-bottom:16px;align-items:stretch}
+.az-main-grid .chart-wrap{height:320px}
+.az-side-stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.az-side-stack .az-card{flex:1}
+.az-bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.az-bottom-grid .az-card{min-width:0}
 .az-row3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px;margin-bottom:16px}
 .az-row3.even{grid-template-columns:repeat(3,1fr)}
-@media(max-width:1080px){.az-row3,.az-row3.even,.az-info-grid{grid-template-columns:1fr}.az-price-row .chart-wrap{height:280px}}
+@media(max-width:1080px){.az-row3,.az-row3.even,.az-main-grid,.az-bottom-grid{grid-template-columns:1fr}.az-main-grid .chart-wrap{height:280px}}
 .az-card{background:var(--panel);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);transition:box-shadow .2s}
 .az-card:hover{box-shadow:0 8px 28px rgba(15,37,64,.09)}
 .az-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
@@ -530,15 +535,15 @@ img{display:block}
 <!-- NAV -->
 <nav id="main-nav">
   <div class="nav-inner">
-    <div class="brand">
-      <div class="brand-mark" title="대시보드로 이동" onclick="switchTab('dashboard')">CL</div>
+    <div class="brand" title="대시보드로 이동" onclick="switchTab('dashboard')">
+      <div class="brand-mark">CL</div>
       <span>Cookie Lab</span>
     </div>
     <div class="nav-tabs" id="nav-tabs">
       <button class="nav-tab active" data-tab="dashboard">대시보드</button>
       <button class="nav-tab" data-tab="analysis">종목 분석</button>
-      <button class="nav-tab" data-tab="ranking">상위 종목</button>
-      <button class="nav-tab" data-tab="compare">비교</button>
+      <button class="nav-tab" data-tab="ranking">종목 랭킹</button>
+      <button class="nav-tab" data-tab="compare">비교분석</button>
       <button class="nav-tab" data-tab="watchlist">관심종목</button>
     </div>
     <div class="nav-right">
@@ -590,23 +595,24 @@ img{display:block}
     <div class="dash-grid3" style="margin-top:4px">
       <div class="panel">
         <div class="panel-head">
+          <div><h2>거래대금 상위</h2><div class="sub">순위별 거래대금</div></div>
+          <button class="panel-more" onclick="openRanking('amount')">더보기</button>
+        </div>
+        <div id="dash-amount-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
           <div><h2>거래량 상위</h2><div class="sub">클릭하면 미니 가격 차트</div></div>
-          <button class="panel-more" onclick="switchTab('volume')">더보기</button>
+          <button class="panel-more" onclick="openRanking('volume')">더보기</button>
         </div>
         <div id="dash-volume-list"></div>
       </div>
       <div class="panel">
         <div class="panel-head">
           <div><h2>시가총액 상위</h2><div class="sub">클릭하면 미니 가격 차트</div></div>
-          <button class="panel-more" onclick="switchTab('marketcap')">더보기</button>
+          <button class="panel-more" onclick="openRanking('marketcap')">더보기</button>
         </div>
         <div id="dash-mcap-list"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head">
-          <div><h2>등락률 상위</h2><div class="sub">클릭하면 미니 가격 차트</div></div>
-        </div>
-        <div id="dash-change-list"></div>
       </div>
     </div>
   </div>
@@ -618,30 +624,37 @@ img{display:block}
         <input type="text" id="stock-picker" placeholder="종목명·코드로 검색" autocomplete="off" spellcheck="false">
         <div class="picker-pop" id="picker-pop"></div>
       </div>
+      <div class="quick-chips" id="analysis-quick"></div>
       <button id="watch-toggle" class="watch-toggle" type="button">☆ 관심종목</button>
     </div>
-    <div class="quick-chips" id="analysis-quick"></div>
     <div id="analysis-body"></div>
   </div>
 
-  <!-- TAB: 상위 종목 (거래량·시가총액 통합) -->
+  <!-- TAB: 종목 랭킹 -->
   <div class="tab-view" id="tab-ranking">
     <div class="section-head">
-      <h2 id="ranking-title">거래량 상위 <span class="sub">컬럼 제목을 누르면 정렬 기준이 바뀝니다</span></h2>
+      <h2 id="ranking-title">거래대금 상위 <span class="sub">컬럼 제목을 누르면 정렬 기준이 바뀝니다</span></h2>
       <div class="seg" id="ranking-basis"></div>
     </div>
     <div id="ranking-toolbar"></div>
     <div class="table-wrap"><div class="table-scroll"><table class="data-table" id="ranking-table"></table></div></div>
   </div>
 
-  <!-- TAB: 비교 -->
+  <!-- TAB: 비교분석 -->
   <div class="tab-view" id="tab-compare">
-    <div class="section-head"><h2>종목 비교 <span class="sub">최대 3종목의 밸류에이션·재무 비교</span></h2></div>
-    <div class="cmp-selbar">
-      <div class="cmp-selected" id="compare-selected"></div>
-      <div class="cmp-picker">
-        <div class="sector-scroll" id="compare-sectors"></div>
-        <div class="cmp-list" id="compare-list"></div>
+    <div class="section-head"><h2>비교분석 <span class="sub">최대 3종목의 밸류에이션·재무 비교</span></h2></div>
+    <div class="compare-top">
+      <div class="cmp-selbar">
+        <div class="cmp-selected" id="compare-selected"></div>
+        <div class="cmp-picker">
+          <div class="sector-scroll" id="compare-sectors"></div>
+          <div class="cmp-list" id="compare-list"></div>
+        </div>
+      </div>
+      <div class="chart-card compare-cap-card">
+        <h3>시가총액 비교</h3>
+        <div class="ch-sub">선택 종목 비중</div>
+        <div class="chart-wrap"><canvas id="chart-compare-cap"></canvas></div>
       </div>
     </div>
     <div id="compare-body"></div>

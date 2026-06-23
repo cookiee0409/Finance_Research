@@ -399,10 +399,9 @@ function renderDashboard(){
   renderBreadth();
   renderGlobalStrip();
 
+  el('dash-amount-list').innerHTML = topAmountList().slice(0,6).map((s,i)=>rankItemHtml(s,i,'amount','amt')).join('');
   el('dash-volume-list').innerHTML = DATA.volume.slice(0,6).map((s,i)=>rankItemHtml(s,i,'volume','vol')).join('');
   el('dash-mcap-list').innerHTML = DATA.marketcap.slice(0,6).map((s,i)=>rankItemHtml(s,i,'mcap','cap')).join('');
-  const topChg = [...STOCKS].filter(s=>s.amount>5e8 || !API_OK).sort((a,b)=>Math.abs(b.change)-Math.abs(a.change)).slice(0,6);
-  el('dash-change-list').innerHTML = topChg.map((s,i)=>rankItemHtml(s,i,'change','chg')).join('');
 }
 function heroIndex(label, idx, sparkId){
   if(!idx) return `<div class="hero-stat"><div class="v">-</div><div class="l">${label}</div></div>`;
@@ -432,6 +431,10 @@ function renderGlobalStrip(){
         ${cp!=null?`<span class="c ${c}">${cp>0?'+':''}${cp.toFixed(2)}%</span>`:''}</div>`;
     }).join('');
   }).catch(()=>{});
+}
+
+function topAmountList(){
+  return [...STOCKS].filter(s=>(s.amount||0)>0).sort((a,b)=>(b.amount||0)-(a.amount||0));
 }
 
 // 섹터 구성 도넛 (시총 가중)
@@ -492,7 +495,8 @@ function renderBreadth(){
 
 function rankItemHtml(s, i, panel, mode){
   let right;
-  if(mode==='vol')      right = `<div class="rank-num"><div class="v">${fmtVol(s.volume)}</div><div class="chg ${cls(s.change)}">${pct(s.change)}</div></div>`;
+  if(mode==='amt')      right = `<div class="rank-num"><div class="v">${fmtCap(Math.round((s.amount||0)/1e8))}</div><div class="chg ${cls(s.change)}">${pct(s.change)}</div></div>`;
+  else if(mode==='vol') right = `<div class="rank-num"><div class="v">${fmtVol(s.volume)}</div><div class="chg ${cls(s.change)}">${pct(s.change)}</div></div>`;
   else if(mode==='cap') right = `<div class="rank-num"><div class="v">${fmtCap(s.marketCap)}</div><div class="chg ${cls(s.change)}">${pct(s.change)}</div></div>`;
   else                  right = `<div class="rank-num"><div class="v">${num(s.price)}</div><div class="chg ${cls(s.change)}">${arrow(s.change)} ${pct(s.change)}</div></div>`;
   return `<div class="rank-item">
@@ -513,7 +517,8 @@ async function toggleRowChart(panel, code){
   const box = el(`rc-${panel}-${code}`);
   if(!box) return;
   const wasOpen = box.style.display !== 'none';
-  qsa(`#dash-${panel==='volume'?'volume':panel==='mcap'?'mcap':'change'}-list .rank-chart`).forEach(b=>{ b.style.display='none'; });
+  const panelId = panel==='amount' ? 'amount' : panel==='volume' ? 'volume' : 'mcap';
+  qsa(`#dash-${panelId}-list .rank-chart`).forEach(b=>{ b.style.display='none'; });
   if(wasOpen) return;
   box.style.display = 'block';
   const wrap = box.querySelector('.rank-chart-wrap');
@@ -531,6 +536,12 @@ async function toggleRowChart(panel, code){
   if(m) m.innerHTML = `최근 30영업일 <b class="${cls(chg)}" style="margin-left:4px">${pct(chg)}</b>`;
 }
 window.toggleRowChart = toggleRowChart;
+
+function openRanking(basis){
+  setRankBasis(basis);
+  switchTab('ranking');
+}
+window.openRanking = openRanking;
 
 function openAnalysis(code){ selectedCode = code; pushRecent(code); switchTab('analysis'); }
 window.openAnalysis = openAnalysis;
@@ -561,23 +572,23 @@ function setupPicker(){
   const input = el('stock-picker'), pop = el('picker-pop');
   if(!input || input._bound) return;
   input._bound = true;
-  const topVolume = ()=>DATA.volume.slice(0,5).map(s=>({code:s.code,name:s.name,market:s.market,sector:s.sector,volume:s.volume}));
+  const topAmount = ()=>topAmountList().slice(0,5).map(s=>({code:s.code,name:s.name,market:s.market,sector:s.sector,amount:s.amount}));
   const close = ()=>{ pop.classList.remove('show'); pickerActive=-1; };
   const renderPop = (list, emptyMsg)=>{
     pickerResults = list; pickerActive=-1;
     pop.innerHTML = list.length ? list.map((it,i)=>`
       <button class="nsr-item" data-i="${i}" onclick="pickStock('${it.code}')">
         <div class="nsr-main"><div class="nsr-name">${h(it.name)}</div><div class="nsr-code">${h(it.code)}</div></div>
-        <div class="nsr-tags"><span class="nsr-tag">${h(it.market||'')}</span>${it.volume!=null?`<span class="nsr-tag">거래량 ${fmtVol(it.volume)}</span>`:`<span class="nsr-tag">${h(it.sector||'')}</span>`}</div>
+        <div class="nsr-tags"><span class="nsr-tag">${h(it.market||'')}</span>${it.amount!=null?`<span class="nsr-tag">거래대금 ${fmtCap(Math.round((it.amount||0)/1e8))}</span>`:`<span class="nsr-tag">${h(it.sector||'')}</span>`}</div>
       </button>`).join('')
       : `<div class="nsr-empty">${emptyMsg||'검색 결과가 없습니다.'}</div>`;
     pop.classList.add('show');
   };
-  input.addEventListener('focus', ()=>{ input.select(); renderPop(topVolume(), null); });
+  input.addEventListener('focus', ()=>{ input.select(); renderPop(topAmount(), null); });
   input.addEventListener('input', ()=>{
     const q = input.value.trim();
     clearTimeout(pickerTimer);
-    if(!q){ renderPop(topVolume()); return; }
+    if(!q){ renderPop(topAmount()); return; }
     pickerTimer = setTimeout(async ()=>{
       const ql = q.toLowerCase();
       let list = STOCKS.filter(s=> s.name.toLowerCase().includes(ql) || s.code.includes(q)).slice(0,12);
@@ -585,7 +596,7 @@ function setupPicker(){
       if(!list.length && API_OK){
         try{
           const r = await api('search',{q});
-          if(r.ok && r.list.length) emptyMsg = '전체 시장에는 있지만, 분석은 시총·거래량 상위 종목만 제공합니다.';
+          if(r.ok && r.list.length) emptyMsg = '전체 시장에는 있지만, 분석 유니버스 종목만 제공합니다.';
         }catch(e){}
       }
       renderPop(list, emptyMsg);
@@ -658,24 +669,26 @@ async function renderAnalysisBody(){
       </div>
     </div>
 
-    <div class="az-price-row">
+    <div class="az-main-grid">
       <div class="az-card" id="sec-chart">
         <div class="az-card-head"><h3>주가 차트</h3><div class="chart-ctrls" id="price-controls"></div></div>
         <div class="chart-wrap"><canvas id="chart-price"></canvas></div>
       </div>
+      <div class="az-side-stack">
+        <div class="az-card">
+          <div class="az-card-head"><h3>외국인·기관 순매수 <span class="sub">최근 10일</span></h3></div>
+          <div id="supply-wrap"><div class="az-ph"><div class="ico">⏳</div><div class="t">수급 불러오는 중…</div></div></div>
+          <div class="az-ret-simple" id="return-simple"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="az-info-grid">
-      <div class="az-card">
-        <div class="az-card-head"><h3>외국인·기관 순매수 <span class="sub">최근 10일</span></h3></div>
-        <div id="supply-wrap"><div class="az-ph"><div class="ico">⏳</div><div class="t">수급 불러오는 중…</div></div></div>
-        <div class="az-ret-simple" id="return-simple"></div>
-      </div>
+    <div class="az-bottom-grid">
       <div class="az-card"><div class="az-card-head"><h3>거래 동향</h3></div><div class="az-kv" id="kv-trade"></div></div>
-      <div class="az-card"><div class="az-card-head"><h3>배당 정보</h3></div><div id="kv-div"></div></div>
       <div class="az-card"><div class="az-card-head"><h3>핵심 지표</h3></div>
         <div class="az-gauge-wrap"><div class="az-gauge"><canvas id="gauge-core"></canvas><div class="sc"><b id="gauge-sc">–</b><span>지표점수</span></div></div><div class="az-gauge-side" id="gauge-side"></div></div>
       </div>
+      <div class="az-card"><div class="az-card-head"><h3>배당 정보</h3></div><div id="kv-div"></div></div>
     </div>
 
     <div class="az-footer">
@@ -1203,17 +1216,17 @@ function renderProfitabilityChart(s){
 }
 
 // ─────────────────────────────────────────────────────────────
-// 상위 종목 (거래량·시가총액 통합 · 툴바 필터 + 헤더 클릭 정렬)
+// 종목 랭킹 (거래대금·거래량·시가총액 통합 · 툴바 필터 + 헤더 클릭 정렬)
 // ─────────────────────────────────────────────────────────────
 const MARKETS = ['ALL','KOSPI','KOSDAQ'];
 
-// 상위 종목 통합 탭 — basis: 'volume' | 'marketcap'
-const RANK_STATE = { basis:'volume', market:'ALL', sector:'ALL', sortKey:'volume', sortDir:-1 };
-const RANK_BASIS = [['volume','거래량'],['marketcap','시가총액']];
+// 종목 랭킹 통합 탭 — basis: 'amount' | 'volume' | 'marketcap'
+const RANK_STATE = { basis:'amount', market:'ALL', sector:'ALL', sortKey:'amount', sortDir:-1 };
+const RANK_BASIS = [['amount','거래대금'],['volume','거래량'],['marketcap','시가총액']];
 
 function setRankBasis(b){
   RANK_STATE.basis = b;
-  RANK_STATE.sortKey = (b==='volume') ? 'volume' : 'marketCap';
+  RANK_STATE.sortKey = b==='amount' ? 'amount' : b==='volume' ? 'volume' : 'marketCap';
   RANK_STATE.sortDir = -1;
   RANK_STATE.sector = 'ALL';
   renderRanking();
@@ -1239,10 +1252,11 @@ function thSort(key, label, st){
 
 function renderRanking(){
   const st = RANK_STATE;
-  const base = st.basis==='volume' ? DATA.volume : DATA.marketcap;
+  const base = st.basis==='amount' ? topAmountList() : st.basis==='volume' ? DATA.volume : DATA.marketcap;
+  const basisLabel = st.basis==='amount' ? '거래대금' : st.basis==='volume' ? '거래량' : '시가총액';
   // 기준 토글
   el('ranking-basis').innerHTML = RANK_BASIS.map(([k,l])=>`<button class="${st.basis===k?'on':''}" onclick="setRankBasis('${k}')">${l} 상위</button>`).join('');
-  el('ranking-title').innerHTML = `${st.basis==='volume'?'거래량':'시가총액'} 상위 <span class="sub">컬럼 제목을 누르면 정렬 기준이 바뀝니다</span>`;
+  el('ranking-title').innerHTML = `${basisLabel} 상위 <span class="sub">컬럼 제목을 누르면 정렬 기준이 바뀝니다</span>`;
 
   // 툴바 (시장 세그 + 섹터칩 + 결과수)
   const inMarket = base.filter(s=>st.market==='ALL'||s.market===st.market);
@@ -1280,7 +1294,7 @@ function renderRanking(){
 // ─────────────────────────────────────────────────────────────
 let compareSector = 'ALL';
 let comparePage = 0;
-const COMPARE_PAGE_SIZE = 8;
+const COMPARE_PAGE_SIZE = 5;
 function renderCompare(){
   // 선택된 종목 태그
   el('compare-selected').innerHTML = compareSel.map(c=>{
@@ -1322,6 +1336,7 @@ function renderCompare(){
   }).join('')}
       </div>
     </div>`;
+  renderCompareCap(compareSel.map(getStock).filter(Boolean));
   renderCompareBody();
 }
 function setCompareSector(s){ compareSector = decodeURIComponent(s); comparePage = 0; renderCompare(); }
@@ -1383,15 +1398,10 @@ async function renderCompareBody(){
   el('compare-body').innerHTML = `
     <div class="compare-viz">
       <div class="chart-card">
-        <h3>종합 역량 비교</h3>
-        <div class="ch-sub">수익성·마진·안정성·성장성·밸류에이션 정규화 점수 (0~100, 높을수록 우수)</div>
-        <div class="chart-wrap" style="height:300px"><canvas id="chart-compbars"></canvas></div>
-        ${adjNote}
-      </div>
-      <div class="chart-card">
         <h3>연도별 매출 비교</h3>
-        <div class="ch-sub">선택 종목 매출 추이 (단위: 억원)${(()=>{ const rl=picks.filter(s=>!(s.revenue||[]).some(v=>v!=null&&v>0)); return rl.length?` · ${rl.map(s=>h(s.name)).join(', ')}는 매출(영업수익) 구분이 없어 제외`:''; })()}</div>
+        <div class="ch-sub">각 종목 첫 표시 연도 매출을 100으로 환산${(()=>{ const rl=picks.filter(s=>!(s.revenue||[]).some(v=>v!=null&&v>0)); return rl.length?` · ${rl.map(s=>h(s.name)).join(', ')}는 매출(영업수익) 구분이 없어 제외`:''; })()}</div>
         <div class="chart-wrap" style="height:300px"><canvas id="chart-compare"></canvas></div>
+        ${adjNote}
       </div>
     </div>
     <div class="table-wrap"><div class="table-scroll">
@@ -1401,7 +1411,6 @@ async function renderCompareBody(){
       </table>
     </div></div>
     <div style="font-size:11.5px;color:var(--text3);margin-top:8px;padding:0 4px">✦ 항목별 우위 종목 표시 · PER·부채비율은 낮을수록, 나머지는 높을수록 우위</div>`;
-  renderCompareBars(picks);
   renderCompareChart(picks);
 }
 
@@ -1422,22 +1431,33 @@ function compScores(s){
     (s.per&&s.per>0)    ? clampN(100-(s.per-5)*(90/55), 10, 100) : 30,
   ].map(v=>+v.toFixed(0));
 }
-// 종합 역량: 그룹 막대그래프 (축별로 종목 막대 비교)
-function renderCompareBars(picks){
+function renderCompareCap(picks){
+  const canvas = el('chart-compare-cap');
+  if(!canvas || typeof Chart==='undefined') return;
   const palette = [COLOR.navy, COLOR.teal, COLOR.gold];
-  const scores = picks.map(compScores);
-  mountChart('chart-compbars', {
-    type:'bar',
-    data:{ labels:COMP_AXES, datasets:picks.map((s,i)=>({
-      label:s.name, data:scores[i], backgroundColor:palette[i%3], borderRadius:5, borderSkipped:false,
-      maxBarThickness:34, categoryPercentage:.7, barPercentage:.9,
-    }))},
-    options:{ responsive:true, maintainAspectRatio:false, animation:{duration:550,easing:'easeOutQuart'},
-      plugins:{ legend:baseLegend(), tooltip:{ ...baseTooltip(), callbacks:{ label:ctx=>` ${ctx.dataset.label}: ${ctx.raw}점` } } },
-      scales:{
-        x:{ grid:{display:false}, border:{color:'rgba(0,0,0,.08)'}, ticks:{font:{family:FONT,size:11.5,weight:'700'},color:COLOR.text2} },
-        y:{ min:0, max:100, grid:{color:COLOR.grid}, border:{display:false}, ticks:{stepSize:25,font:{family:FONT,size:10.5},color:COLOR.text3,callback:v=>v+'점'} }
-      }}
+  const list = picks.filter(s=>s && s.marketCap>0);
+  const total = list.reduce((a,s)=>a+s.marketCap,0);
+  const empty = !list.length || total<=0;
+  mountChart('chart-compare-cap', {
+    type:'doughnut',
+    data:{
+      labels: empty ? ['선택 없음'] : list.map(s=>s.name),
+      datasets:[{
+        data: empty ? [1] : list.map(s=>s.marketCap),
+        backgroundColor: empty ? ['#E8EDF3'] : list.map((_,i)=>palette[i%palette.length]),
+        borderColor:'#fff', borderWidth:3, hoverOffset:6,
+      }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', animation:{duration:450,easing:'easeOutQuart'},
+      plugins:{ legend:{display:!empty, position:'right', labels:{font:{family:FONT,size:11,weight:'700'}, color:COLOR.text2, usePointStyle:true, boxHeight:7}},
+        centerText:{ lines: empty ? ['선택 없음','-'] : ['합산 시총', fmtCap(total)] },
+        tooltip:{ ...baseTooltip(), callbacks:{ label:ctx=>{
+          if(empty) return ' 비교할 종목을 선택하세요';
+          const pctShare = total ? (ctx.raw/total*100).toFixed(1) : '0.0';
+          return ` ${ctx.label}: ${fmtCap(ctx.raw)} (${pctShare}%)`;
+        } } } }
+    },
+    plugins:[centerTextPlugin]
   });
 }
 // 연도별 매출 비교 — 공통 연도축에 종목별 매출 매핑 (#4: years 길이 달라도 정렬)
@@ -1449,17 +1469,24 @@ function renderCompareChart(picks){
   const years = [...yearSet].sort((a,b)=>a-b);
   const labels = years.map(y=>y+'');
   const palette = [COLOR.navy, COLOR.teal, COLOR.gold];
+  const rawByDataset = withFin.map(s=>years.map(y=>{ const idx=s.years.indexOf(y); return idx>=0 ? s.revenue[idx] : null; }));
+  const baseByDataset = rawByDataset.map(arr=>arr.find(v=>v!=null && v>0) || null);
   mountChart('chart-compare', {
     type:'line',
-    data:{ labels, datasets:withFin.map((s,i)=>({
+    data:{ labels, datasets:withFin.map((s,i)=>{
+      const base = baseByDataset[i];
+      return {
       label:s.name,
-      data:years.map(y=>{ const idx=s.years.indexOf(y); return idx>=0 ? s.revenue[idx] : null; }),
+      data:rawByDataset[i].map(v=>v!=null && base ? +(v/base*100).toFixed(1) : null),
       borderColor:palette[i%3], backgroundColor:palette[i%3],
       borderWidth:2.5, tension:.35, pointRadius:4, pointHoverRadius:6, pointBorderColor:'#fff', pointBorderWidth:2, fill:false, spanGaps:true
-    }))},
+    };})},
     options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false}, animation:{duration:500,easing:'easeOutQuart'},
-      plugins:{ legend:baseLegend(), tooltip:baseTooltip(v=>v==null?'-':fmtEok(v)+'원') },
-      scales:baseScales({ y:{ grid:{color:COLOR.grid,drawBorder:false}, border:{display:false}, ticks:{font:{family:FONT,size:11},color:COLOR.text3,padding:6,callback:v=>fmtEok(v)}, grace:'10%' } }) }
+      plugins:{ legend:baseLegend(), tooltip:{...baseTooltip(), callbacks:{ label:ctx=>{
+        const raw = rawByDataset[ctx.datasetIndex]?.[ctx.dataIndex];
+        return ` ${ctx.dataset.label}: 지수 ${ctx.raw}${ctx.raw==null?'':' '}(${raw!=null?fmtEok(raw)+'원':'-'})`;
+      } }} },
+      scales:baseScales({ y:{ grid:{color:COLOR.grid,drawBorder:false}, border:{display:false}, ticks:{font:{family:FONT,size:11},color:COLOR.text3,padding:6,callback:v=>v}, grace:'10%' } }) }
   });
 }
 
@@ -1520,7 +1547,7 @@ function setupSearch(){
       const inUniverse = list.filter(it=>getStock(it.code));
       searchResults = inUniverse; searchActive=-1;
       if(!inUniverse.length){
-        pop.innerHTML = `<div class="nsr-empty">${list.length?'전체 시장에는 있지만, 분석은 시총·거래량 상위 종목만 제공합니다.':'검색 결과가 없습니다.'}</div>`;
+        pop.innerHTML = `<div class="nsr-empty">${list.length?'전체 시장에는 있지만, 분석 유니버스 종목만 제공합니다.':'검색 결과가 없습니다.'}</div>`;
         pop.classList.add('show'); return;
       }
       pop.innerHTML = inUniverse.map((it,i)=>`
